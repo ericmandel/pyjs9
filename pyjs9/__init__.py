@@ -229,7 +229,10 @@ class JS9(object):
             obj = {}
         obj['id'] = self.id
         jstr = json.dumps(obj)
-        url = urllib.urlopen(self.host + '/' + msg, jstr)
+        try:
+            url = urllib.urlopen(self.host + '/' + msg, jstr)
+        except IOError:
+            raise IOError, "can't connect to %s. Is the JS9 helper running?" % self.host
         urtn = url.read()
         if urtn[0:6] == 'ERROR:':
             raise ValueError, urtn

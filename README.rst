@@ -31,6 +31,9 @@ To run::
 	> python
         ... (startup messages) ...
 	>>> from pyjs9 import *
+	>>> dir()
+	['JS9', '__builtins__', '__doc__', '__name__', '__package__']
+	>>>
 	>>> j = JS9()
 	>>>
 	>>> j.SetColormap('red')

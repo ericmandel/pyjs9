@@ -4,6 +4,8 @@ import json
 import urllib
 import base64
 
+__all__ = ['JS9']
+
 """
 pyjs9.py connects python and js9 via the js9Helper.js back-end server
 
@@ -1601,78 +1603,3 @@ class JS9(object):
         Returned results are type integer or float.
         """
         return self.send({"cmd": "zoom", "args": args})
-
-if __name__ == '__main__':
-    print '\nQuick test of pyjs9\n'
-    print "connecting ..."
-    j = JS9()
-    prefix = "./fits"
-    suffix = ".fits"
-    # prefix = "."
-    # suffix = "s1024.fits"
-    for file in os.listdir(prefix):
-        if file.endswith(suffix):
-            # fits file to use
-            testfits = prefix + "/" + file
-            print "FITS file: %s" % testfits
-            j.Load(testfits)
-            print '\nsetcolormap:'
-            print j.SetColormap('red')
-            print '\ngetcolormap:'
-            print j.colormap();
-            print '\nsetzoom:'
-            print j.SetZoom(2)
-            print '\ngetzoom:'
-            print j.zoom()
-            print '\ndelregions:'
-            print j.RemoveRegions('all')
-            print '\naddregions:'
-            print j.regions('circle')
-            print '\ngetregions:'
-            s = j.GetRegions()
-            if len(s) > 0 and 'wcsstr' in s[0]:
-                r = s[0]['wcsstr'].replace(' ', '')
-                print r
-            else:
-                r = "field"
-            print '\ngetimagedata:'
-            s = j.GetImageData(False)
-            f = s["fits"]
-            print f
-            print '\nanalysis routines:'
-            a = j.analysis()
-            print a
-            if a:
-                print '\nanalysis counts:'
-                j.analysis('counts')
-                print '(an analysis results window should be visible)'
-            else:
-                print '\nskipping analysis tasks ...'
-            # fits
-            if js9Globals["fits"]:
-                print "\nfits.open: %s" % testfits
-                hdul = fits.open(testfits)
-                print "SetFITS from hdul: %s" % testfits
-                j.SetFITS(hdul, testfits)
-                print "\nGetFITS from JS9"
-                hdul = j.GetFITS()
-                i = hdul[0].data
-                print "\nreading back fits: shape=%s dtype=%s" % (i.shape, i.dtype)
-                print i
-            else:
-                print "\nskipping fits test ..."
-            # numpy
-            if js9Globals["numpy"]:
-                a = j.GetNumpy()
-                print "\nreading nparray from JS9: shape=%s dtype=%s" % (a.shape, a.dtype)
-                print a
-                print "\nmodifying nparray ..."
-                a = a + 1
-                print a
-                print "\nwriting modified nparray to JS9 ..."
-                j.SetNumpy(a)
-                print "\nre-reading nparray from JS9: shape=%s dtype=%s" % (a.shape, a.dtype)
-                a = j.GetNumpy()
-                print a
-            else:
-                print "\nskipping numpy test ..."

@@ -159,7 +159,7 @@ class JS9(object):
     access to/from well-known Python objects:
 
     - GetNumpy: retrieve a FITS image or an array into a numpy array
-    - SetNumpy: send a numpy array to js9 for display
+    - SetNumpy: send a numpy array to JS9 for display
     - GetFITS: retrieve a FITS image into an astropy (or pyfits) HDU list
     - SetFITS: send a astropy (or pyfits) HDU list to JS9 for display
 
@@ -275,17 +275,18 @@ class JS9(object):
             :param hdul: fits hdulist
             :param name: fits file or object name (used as id)
 
-            :rtype: 1 for success, 0 for failure
-
             After manipulating or otherwise modifying a fits hdulist (or
             making a new one), you can display it in js9 using the 'SetFITS'
             method, which takes the hdulist as its sole argument::
 
-              >>> d.SetFITS(nhdul)
-              1
+              >>> j.SetFITS(nhdul)
 
-            A return value of 1 indicates that js9 was contacted successfully,
-            while a return value of 0 indicates a failure.
+            Note that this routine creates a new image in the JS9 display. If
+            you want to update the current image, use RefreshImage. In that
+            case, the hdul's numpy array must be converted to a list:
+
+              >>>> j.RefreshImage(hdul[0].data.tolist())
+
             """
             if not js9Globals['fits']:
                 raise ValueError, 'SetFITS not defined (fits not found)'
@@ -331,7 +332,7 @@ class JS9(object):
             the 'GetNumpy' method. It takes no arguments and returns the
             np array::
 
-              >>> d.get('file')
+              >>> j.get('file')
               '/home/eric/data/casa.fits[EVENTS]'
               >>> arr = d.GetNumpy()
               >>> arr.shape
@@ -354,31 +355,31 @@ class JS9(object):
             :param name: file or object name (used as id)
             :param dtype: data type into which to convert array before sending
 
-            :rtype: 1 for success, 0 for failure
-
             After manipulating or otherwise modifying a numpy array (or making
             a new one), you can display it in js9 using the 'SetNumpy' method,
             which takes the array as its first argument::
 
-              >>> d.SetNumpy(arr)
-              1
-
-            A return value of 1 indicates that js9 was contacted successfully,
-            while a return value of 0 indicates a failure.
+              >>> j.SetNumpy(arr)
 
             An optional second argument specifies a datatype into which the
             array will be converted before being sent to js9. This is
             important in the case where the array has datatype np.uint64,
             which is not recognized by js9::
 
-              >>> d.SetNumpy(arru64)
+              >>> j.SetNumpy(arru64)
               ...
               ValueError: uint64 is unsupported by JS9 (or FITS)
-              >>> d.SetNumpy(arru64,dtype=np.float64)
-              1
+              >>> j.SetNumpy(arru64,dtype=np.float64)
 
             Also note that np.int8 is sent to js9 as int16 data, np.uint32 is
             sent as int64 data, and np.float16 is sent as float32 data.
+
+            Note that this routine creates a new image in the JS9 display. If
+            you want to update the current image, use RefreshImage. In that
+            case, the numpy array must be converted to a list:
+
+              >>>> j.RefreshImage(arr.tolist())
+
             """
             if type(arr) != numpy.ndarray:
                 raise ValueError, 'requires numpy.ndarray as input'
@@ -431,7 +432,7 @@ class JS9(object):
         
         where:
         
-        -  url: url, fitsy object, in-memory FITS, or FITS blob
+        -  url: url, fits object, or in-memory FITS
         -  opts: object containing image parameters
         
         NB: In Python, you probably want to call JS9.SetFITS() or
@@ -450,7 +451,7 @@ class JS9(object):
         -  naxis[n] image dimensions of each axis (naxis1, naxis2, ...)
         -  bitpix: FITS bitpix value
         -  head: object containing header keywords as properties
-        -  image: typed data array containing image data (native format)
+        -  image: list containing image pixels
         -  dmin: data min (optional)
         -  dmax: data max (optional)
         
@@ -501,16 +502,15 @@ class JS9(object):
         
         where:
         
-        -  input: object, javascript array, typed array, or FITS blob
+        -  input: python list
         
         This routine can be used, for example, in laboratory settings where data
         is being gathered in real-time and the JS9 display needs to be refreshed
         periodically. The first input argument can be one of the following:
         
-        -  a javascript array containing raw data
-        -  a typed array containing raw data
-        -  a blob containing a FITS file
-        -  an object containing a required image property and any of the
+        -  a list containing image pixels (for numpy, use tolist() to convert)
+        -  a two-dimensional list containing image pixels
+        -  a dictionary containing a required image property and any of the
            following optional properties:
         
            -  naxis: number of axes in the image
@@ -521,9 +521,9 @@ class JS9(object):
            -  dmin: data min (optional)
            -  dmax: data max (optional)
         
-        When passing an object as input, the required image property
-        containing the image data can be a javascript array or a typed data
-        array. It also can contain a base64-encoded string containing an array.
+        When passing an object as input, the required image property that
+        contains the image data can be a list or a list of lists containing
+        data. It also can contain a base64-encoded string containing a list.
         This latter can be useful when calling JS9.RefreshImage() via HTTP.
         Ordinarily, when refreshing an image, there is no need to specify the
         optional axis, bitpix, or header properties. But note that you actually
@@ -531,10 +531,10 @@ class JS9(object):
         correctly. Also, if you do not pass dmin or dmax, they will be
         calculated by JS9.
         
-        Note that you can pass a blob containing a complete FITS file to
-        this routine. The blob will be passed to the underlying FITS-handler
-        before being displayed. Thus, processing time is slightly greater than
-        if you just pass the image data directly.
+        Note that you can pass a complete FITS file to this routine. It will 
+        be passed to the underlying FITS-handler before being displayed. 
+        Thus, processing time is slightly greater than if you pass the image
+        data directly.
         
         The main difference between JS9.RefreshImage() and JS9.Load() is
         that the former updates the data into an existing image, while the
@@ -566,8 +566,7 @@ class JS9(object):
         return self.send({"cmd": "CloseImage", "args": args})
 
     def GetImageData(self, *args):
-        """
-        Get image data and auxiliary info for the specified image
+        """Get image data and auxiliary info for the specified image
         
         call:
         
@@ -601,30 +600,25 @@ class JS9(object):
         This call can return raw data for subsequent use in local analysis
         tasks. The format of the returned data depends on the exact value of
         dflag. If dflag is the boolean value true, an HTML5 typed array
-        is returned. In JavaScript, typed arrays are more efficient than
-        ordinary JavaScript arrays, and, in this case, the returned data is
-        actually just reference to the real JS9 image data (so be careful about
-        changing values).
+        is returned, which translates into a dictionary of pixels values in
+        Python. While typed arrays are more efficient than ordinary JavaScript
+        arrays, this is almost certainly not what you want in Python.
 
-        If dflag is the string "array", a JavaScript array is returned. This
-        is not a reference to the real data and will utilize additional memory,
-        but the values can be manipulated safely.
+        If dflag is the string "array", a Python list of pixel values is
+        returned. Intuitively, this would seem to what is wanted, but ... it
+        appears that base64-encoded strings are transferred more quickly
+        through the JS9 helper than are binary data.
         
         If dflag is the string "base64", a base64-encoded string is
         returned. Oddly, this seems to be the fastest method of transferring
-        data to an external process such as Python, and, in fact, is the method
-        used by the pyjs9.py interface. (The "array" method also can be used,
-        but seems to be slower.)
+        data via socket.io to an external process such as Python, and, in 
+        fact, is the method used by the pyjs9 numpy and fits routines.
         
         The file value can be a FITS file or a representation PNG file. The
         fits value will be the path of the FITS file associated with this
         image. For a presentation PNG file, the path generally will be relative
         to the JS9 install directory. For a normal FITS file, the path usually
         is an absolute path to the FITS file.
-        
-        In the Python interface, you almost certainly want to set dflag to
-        "array". Doing so will serialize the data as an array instead of as an
-        object, saving a considerable amount of transfer data.
         """
         return self.send({"cmd": "GetImageData", "args": args})
 

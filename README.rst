@@ -32,7 +32,7 @@ To run::
         ... (startup messages) ...
 	>>> from pyjs9 import *
 	>>> dir()
-	['JS9', '__builtins__', '__doc__', '__name__', '__package__']
+        ['JS9', ..., 'js9Globals']
 	>>>
 	>>> j = JS9()
 	>>>

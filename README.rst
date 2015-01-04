@@ -55,3 +55,14 @@ To run::
 	>>> narr = j.GetNumpy()
 	>>> narr.shape
 	(1025, 1025)
+
+Or, if you have relatively fast internet connectivity, try the JS9 Web page::
+
+	> python
+        ... (startup messages) ...
+	>>> from pyjs9 import *
+	>>> dir()
+        ['JS9', ..., 'js9Globals']
+	>>>
+	>>> j = JS9('js9.si.edu')
+	>>> etc ...

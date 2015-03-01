@@ -5,12 +5,31 @@ python:
   - 3.3
   - 3.4
 
+# TODO: set up a larger test matrix:
+# - JS9 versions
+# - numpy versions
+# - astropy / pyfits versions
+
+before_install:
+  # http://docs.travis-ci.com/user/gui-and-headless-browsers/#Using-xvfb-to-Run-Tests-That-Require-GUI-(e.g.-a-Web-browser)
+  - "export DISPLAY=:99.0"
+  - "sh -e /etc/init.d/xvfb start"
+
 install:
   - sudo apt-get update
-  - sudo apt-get install numpy astropy
+  - sudo apt-get install node
+  - if [[ $TRAVIS_PYTHON_VERSION == 2* ]]; then sudo apt-get install python-numpy; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 3* ]]; then sudo apt-get install python3-numpy; fi
+  - pip install astropy
   - pip install pytest
+
+  # Install JS9 so that we can test
+  - git clone https://github.com/ericmandel/js9.git
+  - node js9/js9Helper.js &
+  - sleep 3 # give it some time to start
 
 script:
   - sudo python setup.py install
   # TODO: run tests
-
+  # For now, let's at least check that we can connect to js9Helper
+  - python -c 'import pyjs9; pyjs9.JS9()'

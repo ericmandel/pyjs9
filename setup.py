@@ -22,5 +22,5 @@ setup(name='pyjs9',
       keywords='astronomy astrophysics image display',
       url='http://js9.si.edu',
       license='MIT',
-      packages=['pyjs9'],
+      packages=['pyjs9', 'pyjs9.extern'],
       zip_safe=False)

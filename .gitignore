@@ -2,6 +2,7 @@
 *~
 *.bak
 foo*
+.idea
 
 # scratch diretories
 /test/

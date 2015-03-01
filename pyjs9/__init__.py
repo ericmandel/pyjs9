@@ -216,7 +216,7 @@ class JS9(object):
         """
         An internal routine to send a test message to the helper
         """
-        self.send(None, msg="image")
+        self.send(None, msg="alive")
 
     def send(self, obj, msg='msg'):
         """
@@ -239,11 +239,13 @@ class JS9(object):
             url = urlopen(self.host + '/' + msg, jstr.encode('utf8'))
         except IOError as e:
             raise IOError("{0}: {1}".format(self.host, e.strerror))
+
         urtn = url.read()
+
         if urtn[0:6] == 'ERROR:':
             raise ValueError(urtn)
         try:
-            res = json.loads(urtn, object_hook=_decode_dict)
+            res = json.loads(urtn.decode('utf8'), object_hook=_decode_dict)
         except ValueError:       # not json
             res = urtn
         return res

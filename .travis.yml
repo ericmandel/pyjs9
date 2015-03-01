@@ -17,19 +17,19 @@ before_install:
 
 install:
   - sudo apt-get update
-  - sudo apt-get install node
+  - sudo apt-get install node firefox
   - if [[ $TRAVIS_PYTHON_VERSION == 2* ]]; then sudo apt-get install python-numpy; fi
   - if [[ $TRAVIS_PYTHON_VERSION == 3* ]]; then sudo apt-get install python3-numpy; fi
   - pip install astropy
   - pip install pytest
 
-  # Install JS9 so that we can test
+  # `pyjs9` tests need `js9Helper.js` running and `js9basics.html` open
+  # TODO: start and stop these from the tests
   - git clone https://github.com/ericmandel/js9.git
   - node js9/js9Helper.js &
+  - firefox js9/js9basics.html &
   - sleep 3 # give it some time to start
 
 script:
   - sudo python setup.py install
-  # TODO: run tests
-  # For now, let's at least check that we can connect to js9Helper
-  - python -c 'import pyjs9; pyjs9.JS9()'
+  - python setup.py test -a '-v'

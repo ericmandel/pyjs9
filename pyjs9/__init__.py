@@ -7,7 +7,8 @@ pyjs9.py connects python and js9 via the js9Helper.js back-end server
 - Send/retrieve numpy arrays and astropy (or pyfits) hdulists to/from js9.
 
 """
-import StringIO
+from .extern import six
+from .extern.six import StringIO
 import json
 import urllib
 import base64
@@ -55,7 +56,7 @@ except:
 def _decode_list(data):
     rv = []
     for item in data:
-        if isinstance(item, unicode):
+        if isinstance(item, six.text_type):
             item = item.encode('utf-8')
         elif isinstance(item, list):
             item = _decode_list(item)
@@ -67,9 +68,9 @@ def _decode_list(data):
 def _decode_dict(data):
     rv = {}
     for key, value in data.iteritems():
-        if isinstance(key, unicode):
+        if isinstance(key, six.text_type):
             key = key.encode('utf-8')
-        if isinstance(value, unicode):
+        if isinstance(value, six.text_type):
             value = value.encode('utf-8')
         elif isinstance(value, list):
             value = _decode_list(value)
@@ -91,7 +92,8 @@ if js9Globals['numpy']:
         elif bitpix == -32: return numpy.float32
         elif bitpix == -64: return numpy.float64
         elif bitpix == -16: return numpy.uint16
-        else: raise ValueError, 'unsupported bitpix: %d' % bitpix
+        else:
+            raise ValueError('unsupported bitpix: %d' % bitpix)
 
     def _np2bp(dtype):
         """
@@ -104,7 +106,8 @@ if js9Globals['numpy']:
         elif dtype == numpy.float32: return -32
         elif dtype == numpy.float64: return -64
         elif dtype == numpy.uint16:  return -16
-        else: raise ValueError, 'unsupported dtype: %s' % dtype
+        else:
+            raise ValueError('unsupported dtype: %s' % dtype)
 
     def _bp2py(bitpix):
         """
@@ -117,7 +120,8 @@ if js9Globals['numpy']:
         elif bitpix == -32: return 'f'
         elif bitpix == -64: return 'd'
         elif bitpix == -16: return 'H'
-        else: raise ValueError, 'unsupported bitpix: %d' % bitpix
+        else:
+            raise ValueError('unsupported bitpix: %d' % bitpix)
 
     def _im2np(im):
         """
@@ -129,6 +133,7 @@ if js9Globals['numpy']:
         bp = int(im['bitpix'])
         dtype = _bp2np(bp)
         dlen = h * w * abs(bp) / 8
+
         if js9Globals['retrieveAs'] == 'array':
             s = im['data'][0:h*w]
             if d > 1:
@@ -142,8 +147,10 @@ if js9Globals['numpy']:
             else:
                 arr = numpy.frombuffer(s, dtype=dtype).reshape((h,w))
         else:
-            raise ValueError, 'unknown retrieveAs type for GetImageData()'
+            raise ValueError('unknown retrieveAs type for GetImageData()')
+
         return arr
+
 
 class JS9(object):
     """
@@ -231,10 +238,10 @@ class JS9(object):
         try:
             url = urllib.urlopen(self.host + '/' + msg, jstr)
         except IOError as e:
-            raise IOError,  "{0}: {1}".format(self.host, e.strerror)
+            raise IOError("{0}: {1}".format(self.host, e.strerror))
         urtn = url.read()
         if urtn[0:6] == 'ERROR:':
-            raise ValueError, urtn
+            raise ValueError(urtn)
         try:
             res = json.loads(urtn, object_hook=_decode_dict)
         except ValueError:       # not json
@@ -288,12 +295,12 @@ class JS9(object):
 
             """
             if not js9Globals['fits']:
-                raise ValueError, 'SetFITS not defined (fits not found)'
+                raise ValueError('SetFITS not defined (fits not found)')
             if type(hdul) != fits.HDUList:
                 if js9Globals['fits'] == 1:
-                    raise ValueError, 'requires astropy.HDUList as input'
+                    raise ValueError('requires astropy.HDUList as input')
                 else:
-                    raise ValueError, 'requires pyfits.HDUList as input'
+                    raise ValueError('requires pyfits.HDUList as input')
             # in-memory string
             memstr = StringIO.StringIO()
             # write fits to memory string
@@ -315,12 +322,12 @@ class JS9(object):
             """
             This method is not defined because fits in not installed.
             """
-            raise ValueError, 'GetFITS not defined (astropy.io.fits not found)'
+            raise ValueError('GetFITS not defined (astropy.io.fits not found)')
         def SetFITS(self):
             """
             This method is not defined because fits in not installed.
             """
-            raise ValueError, 'SetFITS not defined (astropy.io.fits not found)'
+            raise ValueError('SetFITS not defined (astropy.io.fits not found)')
 
     if js9Globals['numpy']:
         def GetNumpy(self):
@@ -381,7 +388,7 @@ class JS9(object):
 
             """
             if type(arr) != numpy.ndarray:
-                raise ValueError, 'requires numpy.ndarray as input'
+                raise ValueError('requires numpy.ndarray as input')
             if dtype and dtype != arr.dtype:
                 narr = arr.astype(dtype)
             else:
@@ -414,12 +421,13 @@ class JS9(object):
             """
             This method is not defined because numpy in not installed.
             """
-            raise ValueError, 'GetNumpy not defined (numpy not found)'
+            raise ValueError('GetNumpy not defined (numpy not found)')
+
         def SetNumpy(self):
             """
             This method is not defined because numpy in not installed.
             """
-            raise ValueError, 'SetNumpy not defined (numpy not found)'
+            raise ValueError('SetNumpy not defined (numpy not found)')
 
     def Load(self, *args):
         """

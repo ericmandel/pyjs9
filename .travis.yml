@@ -31,5 +31,5 @@ install:
   - sleep 3 # give it some time to start
 
 script:
-  - sudo python setup.py install
+#  - sudo python setup.py install
   - python setup.py test -a '-v'

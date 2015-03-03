@@ -1,4 +1,4 @@
-JS9 brings image display right into your browser::
+JS9 brings image display right into your browser:
 
 - display URL-based FITS images and binary tables
 - drag and drop FITS images and binary tables
@@ -15,7 +15,7 @@ JS9 brings image display right into your browser::
 
 See: http://js9.si.edu for more information about JS9.
 
-pyjs9.py connects python and JS9 via the js9Helper.js back-end server::
+``pyjs9.py`` connects python and JS9 via the ``js9Helper.js`` back-end server:
 
 - The JS9 class constructor connects to a single JS9 instance in a Web page.
 - The JS9 object supports the JS9 Public API and a shorter command-line syntax.

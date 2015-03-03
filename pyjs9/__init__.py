@@ -210,7 +210,7 @@ class JS9(object):
         """
         An internal routine to send a test message to the helper
         """
-        self.send(None, msg="image")
+        self.send(None, msg="alive")
 
     def send(self, obj, msg='msg'):
         """

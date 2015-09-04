@@ -1,9 +1,9 @@
 from __future__ import print_function
 
 import json
-import urllib
 import base64
 
+import requests
 import six
 from six import BytesIO
 
@@ -263,13 +263,17 @@ class JS9(object):
         obj['id'] = self.id
         jstr = json.dumps(obj)
         try:
-            url = urllib.urlopen(self.host + '/' + msg, jstr)
+            url = requests.get(self.host + '/' + msg, params=jstr)
         except IOError as e:
-            raise IOError("{0}: {1}".format(self.host, e.strerror))
-        urtn = url.read()
-        if urtn[0:6] == 'ERROR:':
+            raise IOError("Cannot connect to {0}: {1}".format(self.host,
+                                                              e.strerror))
+        urtn = url.text
+        if 'ERROR:' in urtn:
             raise ValueError(urtn)
         try:
+            # TODO: url.json() decode the json for us:
+            # http://www.python-requests.org/en/latest/user/quickstart/#json-response-content
+            # res = url.json()
             res = json.loads(urtn, object_hook=_decode_dict)
         except ValueError:   # not json
             res = urtn

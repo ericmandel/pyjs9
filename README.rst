@@ -65,13 +65,14 @@ To run::
 	>>> hdul.info()
 	Filename: (No file associated with this HDUList)
 	No.    Name         Type      Cards   Dimensions   Format
-	0    PRIMARY     PrimaryHDU       6   (1025, 1025)   int32   
+	0    PRIMARY     PrimaryHDU       6   (1024, 1024)   int32   
 	>>>
 	>>> narr = j.GetNumpy()
 	>>> narr.shape
-	(1025, 1025)
+	(1024, 1024)
 
-Or, if you have relatively fast internet connectivity, try the JS9 Web page::
+Or, if you have relatively fast internet connectivity, open the JS9 Web page
+and::
 
 	> python
         ... (startup messages) ...

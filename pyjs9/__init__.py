@@ -161,7 +161,7 @@ if js9Globals['numpy']:
         d = 1
         bp = int(im['bitpix'])
         dtype = _bp2np(bp)
-        dlen = h * w * abs(bp) / 8
+        dlen = h * w * abs(bp) // 8
         if js9Globals['retrieveAs'] == 'array':
             s = im['data'][0:h*w]
             if d > 1:
@@ -169,7 +169,11 @@ if js9Globals['numpy']:
             else:
                 arr = numpy.array(s, dtype=dtype).reshape((h, w))
         elif js9Globals['retrieveAs'] == 'base64':
-            s = base64.decodestring(im['data'])[0:dlen]
+            if six.PY3:
+                im_data = im['data'].encode()
+            else:
+                im_data = im['data']
+            s = base64.decodestring(im_data)[0:dlen]
             if d > 1:
                 arr = numpy.frombuffer(s, dtype=dtype).reshape((d, h, w))
             else:

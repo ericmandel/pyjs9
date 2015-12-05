@@ -1,8 +1,11 @@
-import os
-import StringIO
+from __future__ import print_function
+
 import json
-import urllib
 import base64
+
+import requests
+import six
+from six import BytesIO
 
 __all__ = ['JS9', 'js9Globals']
 
@@ -37,7 +40,7 @@ try:
 except:
     try:
         import pyfits as fits
-        if fits.__version__ >=  '2.2':
+        if fits.__version__ >= '2.2':
             js9Globals['fits'] = 2
         else:
             js9Globals['fits'] = 0
@@ -51,12 +54,16 @@ try:
 except:
     js9Globals['numpy'] = 0
 
-# utilities
+# in python 3 strings are unicode
+if six.PY3:
+    unicode = str
 
+
+# utilities
 def _decode_list(data):
     rv = []
     for item in data:
-        if isinstance(item, unicode):
+        if six.PY2 and isinstance(item, unicode):
             item = item.encode('utf-8')
         elif isinstance(item, list):
             item = _decode_list(item)
@@ -65,12 +72,13 @@ def _decode_list(data):
         rv.append(item)
     return rv
 
+
 def _decode_dict(data):
     rv = {}
-    for key, value in data.iteritems():
-        if isinstance(key, unicode):
+    for key, value in data.items():
+        if six.PY2 and isinstance(key, unicode):
             key = key.encode('utf-8')
-        if isinstance(value, unicode):
+        if six.PY2 and isinstance(value, unicode):
             value = value.encode('utf-8')
         elif isinstance(value, list):
             value = _decode_list(value)
@@ -85,40 +93,64 @@ if js9Globals['numpy']:
         """
         Convert FITS bitpix to numpy datatype
         """
-        if bitpix == 8:     return numpy.uint8
-        elif bitpix == 16:  return numpy.int16
-        elif bitpix == 32:  return numpy.int32
-        elif bitpix == 64:  return numpy.int64
-        elif bitpix == -32: return numpy.float32
-        elif bitpix == -64: return numpy.float64
-        elif bitpix == -16: return numpy.uint16
-        else: raise ValueError, 'unsupported bitpix: %d' % bitpix
+        if bitpix == 8:
+            return numpy.uint8
+        elif bitpix == 16:
+            return numpy.int16
+        elif bitpix == 32:
+            return numpy.int32
+        elif bitpix == 64:
+            return numpy.int64
+        elif bitpix == -32:
+            return numpy.float32
+        elif bitpix == -64:
+            return numpy.float64
+        elif bitpix == -16:
+            return numpy.uint16
+        else:
+            raise ValueError('unsupported bitpix: %d' % bitpix)
 
     def _np2bp(dtype):
         """
         Convert numpy datatype to FITS bitpix
         """
-        if dtype == numpy.uint8:     return 8
-        elif dtype == numpy.int16:   return 16
-        elif dtype == numpy.int32:   return 32
-        elif dtype == numpy.int64:   return 64
-        elif dtype == numpy.float32: return -32
-        elif dtype == numpy.float64: return -64
-        elif dtype == numpy.uint16:  return -16
-        else: raise ValueError, 'unsupported dtype: %s' % dtype
+        if dtype == numpy.uint8:
+            return 8
+        elif dtype == numpy.int16:
+            return 16
+        elif dtype == numpy.int32:
+            return 32
+        elif dtype == numpy.int64:
+            return 64
+        elif dtype == numpy.float32:
+            return -32
+        elif dtype == numpy.float64:
+            return -64
+        elif dtype == numpy.uint16:
+            return -16
+        else:
+            raise ValueError('unsupported dtype: %s' % dtype)
 
     def _bp2py(bitpix):
         """
         Convert FITS bitpix to python datatype
         """
-        if bitpix == 8:     return 'B'
-        elif bitpix == 16:  return 'h'
-        elif bitpix == 32:  return 'l'
-        elif bitpix == 64:  return 'q'
-        elif bitpix == -32: return 'f'
-        elif bitpix == -64: return 'd'
-        elif bitpix == -16: return 'H'
-        else: raise ValueError, 'unsupported bitpix: %d' % bitpix
+        if bitpix == 8:
+            return 'B'
+        elif bitpix == 16:
+            return 'h'
+        elif bitpix == 32:
+            return 'l'
+        elif bitpix == 64:
+            return 'q'
+        elif bitpix == -32:
+            return 'f'
+        elif bitpix == -64:
+            return 'd'
+        elif bitpix == -16:
+            return 'H'
+        else:
+            raise ValueError('unsupported bitpix: %d' % bitpix)
 
     def _im2np(im):
         """
@@ -129,22 +161,27 @@ if js9Globals['numpy']:
         d = 1
         bp = int(im['bitpix'])
         dtype = _bp2np(bp)
-        dlen = h * w * abs(bp) / 8
+        dlen = h * w * abs(bp) // 8
         if js9Globals['retrieveAs'] == 'array':
             s = im['data'][0:h*w]
             if d > 1:
-                arr = numpy.array(s, dtype=dtype).reshape((d,h,w))
+                arr = numpy.array(s, dtype=dtype).reshape((d, h, w))
             else:
-                arr = numpy.array(s, dtype=dtype).reshape((h,w))
+                arr = numpy.array(s, dtype=dtype).reshape((h, w))
         elif js9Globals['retrieveAs'] == 'base64':
-            s = base64.decodestring(im['data'])[0:dlen]
-            if d > 1:
-                arr = numpy.frombuffer(s, dtype=dtype).reshape((d,h,w))
+            if six.PY3:
+                im_data = im['data'].encode()
             else:
-                arr = numpy.frombuffer(s, dtype=dtype).reshape((h,w))
+                im_data = im['data']
+            s = base64.decodestring(im_data)[0:dlen]
+            if d > 1:
+                arr = numpy.frombuffer(s, dtype=dtype).reshape((d, h, w))
+            else:
+                arr = numpy.frombuffer(s, dtype=dtype).reshape((h, w))
         else:
-            raise ValueError, 'unknown retrieveAs type for GetImageData()'
+            raise ValueError('unknown retrieveAs type for GetImageData()')
         return arr
+
 
 class JS9(object):
     """
@@ -172,13 +209,13 @@ class JS9(object):
 
         :rtype: JS9 object connected to a single instance of js9
 
-        The JS9() contructor takes its first argument to be the host 
-        (and optional port) on which the back-end js9Helper is running. 
-        The default is 'http://localhost:2718', which generally will be
-        the correct value for running locally. The default port (2718)
-        will be added if no port value is found. The string 'http://' will
-        be prefixed to the host if a URL protocol is not supplied. Thus, to
-        connect to the main JS9 Web site, you can use host='js9.si.edu'.
+        The JS9() contructor takes its first argument to be the host (and
+        optional port) on which the back-end js9Helper is running. The default
+        is 'http://localhost:2718', which generally will be the correct value
+        for running locally. The default port (2718) will be added if no port
+        value is found. The string 'http://' will be prefixed to the host if a
+        URL protocol is not supplied. Thus, to connect to the main JS9 Web
+        site, you can use host='js9.si.edu'.
 
         The   as its main argument. This
         is the default id for single instances of JS9 in a Web page.
@@ -187,15 +224,15 @@ class JS9(object):
         default is 'JS9' ... which, not surprisingly, is the default
         JS9 display id.
         """
-        self.__dict__['id']  = id
+        self.__dict__['id'] = id
         # add default port, if necessary
         c = host.rfind(':')
         s = host.find('/')
-        if( c <= s ):
+        if(c <= s):
             host += ":2718"
-        if( s < 0 ):
+        if(s < 0):
             host = 'http://' + host
-        self.__dict__['host']  = host
+        self.__dict__['host'] = host
         self._alive()
 
     def __setitem__(self, itemname, value):
@@ -225,20 +262,24 @@ class JS9(object):
         >>> js9.send({'cmd': 'SetColormap', 'args': ['red']})
         'OK'
         """
-        if obj == None:
+        if obj is None:
             obj = {}
         obj['id'] = self.id
         jstr = json.dumps(obj)
         try:
-            url = urllib.urlopen(self.host + '/' + msg, jstr)
+            url = requests.get(self.host + '/' + msg, params=jstr)
         except IOError as e:
-            raise IOError,  "{0}: {1}".format(self.host, e.strerror)
-        urtn = url.read()
-        if urtn[0:6] == 'ERROR:':
-            raise ValueError, urtn
+            raise IOError("Cannot connect to {0}: {1}".format(self.host,
+                                                              e.strerror))
+        urtn = url.text
+        if 'ERROR:' in urtn:
+            raise ValueError(urtn)
         try:
+            # TODO: url.json() decode the json for us:
+            # http://www.python-requests.org/en/latest/user/quickstart/#json-response-content
+            # res = url.json()
             res = json.loads(urtn, object_hook=_decode_dict)
-        except ValueError:       # not json
+        except ValueError:   # not json
             res = urtn
         return res
 
@@ -289,20 +330,20 @@ class JS9(object):
 
             """
             if not js9Globals['fits']:
-                raise ValueError, 'SetFITS not defined (fits not found)'
+                raise ValueError('SetFITS not defined (fits not found)')
             if type(hdul) != fits.HDUList:
                 if js9Globals['fits'] == 1:
-                    raise ValueError, 'requires astropy.HDUList as input'
+                    raise ValueError('requires astropy.HDUList as input')
                 else:
-                    raise ValueError, 'requires pyfits.HDUList as input'
+                    raise ValueError('requires pyfits.HDUList as input')
             # in-memory string
-            memstr = StringIO.StringIO()
+            memstr = BytesIO()
             # write fits to memory string
             hdul.writeto(memstr, output_verify=js9Globals['output_verify'])
             # get memory string as an encoded string
             encstr = base64.b64encode(memstr.getvalue())
             # set up JS9 options
-            opts = {};
+            opts = {}
             if name:
                 opts["filename"] = name
             # send encoded file to JS9 for display
@@ -316,12 +357,13 @@ class JS9(object):
             """
             This method is not defined because fits in not installed.
             """
-            raise ValueError, 'GetFITS not defined (astropy.io.fits not found)'
+            raise ValueError('GetFITS not defined (astropy.io.fits not found)')
+
         def SetFITS(self):
             """
             This method is not defined because fits in not installed.
             """
-            raise ValueError, 'SetFITS not defined (astropy.io.fits not found)'
+            raise ValueError('SetFITS not defined (astropy.io.fits not found)')
 
     if js9Globals['numpy']:
         def GetNumpy(self):
@@ -382,7 +424,7 @@ class JS9(object):
 
             """
             if type(arr) != numpy.ndarray:
-                raise ValueError, 'requires numpy.ndarray as input'
+                raise ValueError('requires numpy.ndarray as input')
             if dtype and dtype != arr.dtype:
                 narr = arr.astype(dtype)
             else:
@@ -404,9 +446,11 @@ class JS9(object):
             # base64-encode numpy array in native format
             encarr = base64.b64encode(narr.tostring())
             # create object to send to JS9 containing encoded array
-            hdu = {'naxis':2, 'naxis1':w, 'naxis2':h, 'bitpix':bp, 'dmin': dmin, 'dmax': dmax, 'encoding': 'base64', 'image':encarr}
+            hdu = {'naxis': 2, 'naxis1': w, 'naxis2': h, 'bitpix': bp,
+                   'dmin': dmin, 'dmax': dmax, 'encoding': 'base64',
+                   'image': encarr}
             if filename:
-                hdu["filename"] = filename;
+                hdu["filename"] = filename
             # send encoded file to JS9 for display
             return self.Load(hdu)
 
@@ -415,26 +459,27 @@ class JS9(object):
             """
             This method is not defined because numpy in not installed.
             """
-            raise ValueError, 'GetNumpy not defined (numpy not found)'
+            raise ValueError('GetNumpy not defined (numpy not found)')
+
         def SetNumpy(self):
             """
             This method is not defined because numpy in not installed.
             """
-            raise ValueError, 'SetNumpy not defined (numpy not found)'
+            raise ValueError('SetNumpy not defined (numpy not found)')
 
     def Load(self, *args):
         """
         Load an image into JS9
-        
+
         call:
-        
+
         Load(url, opts)
-        
+
         where:
-        
+
         -  url: url, fits object, or in-memory FITS
         -  opts: object containing image parameters
-        
+
         NB: In Python, you probably want to call JS9.SetFITS() or
         JS9.SetNumpy() to load a local file into JS9.
 
@@ -443,9 +488,10 @@ class JS9(object):
 
         You also can pass an in-memory buffer containing a FITS file, or a
         string containing a base64-encoded FITS file.
-        
-        Finally, you can pass a fits object containing the following properties:
-        
+
+        Finally, you can pass a fits object containing the following
+        properties:
+
         -  naxis: number of axes in the image
         -  axis: array of image dimensions for each axis or ...
         -  naxis[n] image dimensions of each axis (naxis1, naxis2, ...)
@@ -454,37 +500,36 @@ class JS9(object):
         -  image: list containing image pixels
         -  dmin: data min (optional)
         -  dmax: data max (optional)
-        
+
         To override default image parameters, pass the image opts argument:
 
             >>> j.Load("png/m13.png", {"scale":"linear", "colormap":"sls"})
-        
         """
         return self.send({"cmd": "Load", "args": args})
 
     def GetLoadStatus(self, *args):
         """
         Get Load Status
-        
+
         call:
-        
+
         status  = GetLoadStatus(id)
-        
+
         where:
-        
+
         -  id: the id of the file that was loaded into JS9
-        
+
         returns:
-        
+
         -  status: status of the load
-        
+
         This routine returns the status of the load process for this image.
-        It is needed in certain cases where JS9.Load() returns before the 
-        image data is actially loaded into the display.
+        It is needed in certain cases where JS9.Load() returns before the image
+        data is actially loaded into the display.
 
         A status of "complete" means that the image is fully loaded. Other
         statuses include:
-        
+
         -  loading: the image is in process of loading
         -  error: image did not load due to an error
         -  other: another image is loaded into this display
@@ -495,24 +540,25 @@ class JS9(object):
     def RefreshImage(self, *args):
         """
         Re-read the image data and re-display
-        
+
         call:
-        
+
         RefreshImage(input)
-        
+
         where:
-        
+
         -  input: python list
-        
-        This routine can be used, for example, in laboratory settings where data
-        is being gathered in real-time and the JS9 display needs to be refreshed
-        periodically. The first input argument can be one of the following:
-        
+
+        This routine can be used, for example, in laboratory settings where
+        data is being gathered in real-time and the JS9 display needs to be
+        refreshed periodically. The first input argument can be one of the
+        following:
+
         -  a list containing image pixels (for numpy, use tolist() to convert)
         -  a two-dimensional list containing image pixels
         -  a dictionary containing a required image property and any of the
            following optional properties:
-        
+
            -  naxis: number of axes in the image
            -  axis: array of image dimensions for each axis or ...
            -  naxis[n] image dimensions of each axis (naxis1, naxis2, ...)
@@ -520,7 +566,7 @@ class JS9(object):
            -  head: object containing header keywords as properties
            -  dmin: data min (optional)
            -  dmax: data max (optional)
-        
+
         When passing an object as input, the required image property that
         contains the image data can be a list or a list of lists containing
         data. It also can contain a base64-encoded string containing a list.
@@ -530,12 +576,12 @@ class JS9(object):
         can change these values on the fly, and JS9 will process the new data
         correctly. Also, if you do not pass dmin or dmax, they will be
         calculated by JS9.
-        
-        Note that you can pass a complete FITS file to this routine. It will 
-        be passed to the underlying FITS-handler before being displayed. 
-        Thus, processing time is slightly greater than if you pass the image
-        data directly.
-        
+
+        Note that you can pass a complete FITS file to this routine. It will be
+        passed to the underlying FITS-handler before being displayed.  Thus,
+        processing time is slightly greater than if you pass the image data
+        directly.
+
         The main difference between JS9.RefreshImage() and JS9.Load() is
         that the former updates the data into an existing image, while the
         latter adds a completely new image to the display.
@@ -545,21 +591,21 @@ class JS9(object):
     def CloseImage(self, *args):
         """
         Clear the image from the display and mark resources for release
-        
+
         call:
-        
+
         CloseImage()
-        
+
         Each loaded image claims a non-trivial amount of memory from a finite
-        amount of browser heap space. For example, the default 32-bit version of
-        Google Chrome has a memory limit of approximately 500Mb. If you are
-        finished viewing an image, closing it tells the browser that the image's
-        memory can be freed. In principle, this is can help reduce overall
-        memory usage as successive images are loaded and discarded. Note,
-        however, that closing an image only provides a hint to the browser,
-        since this sort of garbage collection is not directly accessible to
-        JavaScript programming.
-        
+        amount of browser heap space. For example, the default 32-bit version
+        of Google Chrome has a memory limit of approximately 500Mb. If you are
+        finished viewing an image, closing it tells the browser that the
+        image's memory can be freed. In principle, this is can help reduce
+        overall memory usage as successive images are loaded and discarded.
+        Note, however, that closing an image only provides a hint to the
+        browser, since this sort of garbage collection is not directly
+        accessible to JavaScript programming.
+
         Some day, all browsers will support full 64-bit addressing and this
         problem will go away ...
         """
@@ -567,22 +613,22 @@ class JS9(object):
 
     def GetImageData(self, *args):
         """Get image data and auxiliary info for the specified image
-        
+
         call:
-        
+
         imdata  = GetImageData(dflag) where:
-        
+
         -  dflag: specifies whether the data should also be returned
-        
+
         returns:
-        
+
         -  imdata: image data object
-        
+
         NB: In Python, you probably want to call JS9.GetFITS() or
         JS9.GetNumpy() to retrieve an image.
 
         The image data object contains the following information:
-        
+
         -  id: the id of the file that was loaded into JS9
         -  file: the file or URL that was loaded into JS9
         -  fits: the FITS file associated with this image
@@ -596,7 +642,7 @@ class JS9(object):
            char, 16, 32 for signed integer, -32 or -64 for float)
         -  header: object containing FITS header values
         -  data: buffer containing raw data values
-        
+
         This call can return raw data for subsequent use in local analysis
         tasks. The format of the returned data depends on the exact value of
         dflag. If dflag is the boolean value true, an HTML5 typed array
@@ -608,12 +654,12 @@ class JS9(object):
         returned. Intuitively, this would seem to what is wanted, but ... it
         appears that base64-encoded strings are transferred more quickly
         through the JS9 helper than are binary data.
-        
-        If dflag is the string "base64", a base64-encoded string is
-        returned. Oddly, this seems to be the fastest method of transferring
-        data via socket.io to an external process such as Python, and, in 
+
+        If dflag is the string "base64", a base64-encoded string is returned.
+        Oddly, this seems to be the fastest method of transferring
+        data via socket.io to an external process such as Python, and, in
         fact, is the method used by the pyjs9 numpy and fits routines.
-        
+
         The file value can be a FITS file or a representation PNG file. The
         fits value will be the path of the FITS file associated with this
         image. For a presentation PNG file, the path generally will be relative
@@ -625,17 +671,17 @@ class JS9(object):
     def GetColormap(self, *args):
         """
         Get the image colormap
-        
+
         call:
-        
+
         cmap  = GetColormap()
-        
+
         returns:
-        
+
         -  cmap: an object containing colormap information.
-        
+
         The returned cmap object will contain the following properties:
-        
+
         -  colormap: colormap name
         -  contrast: contrast value (range: 0 to 10)
         -  bias: bias value (range 0 to 1)
@@ -645,17 +691,17 @@ class JS9(object):
     def SetColormap(self, *args):
         """
         Set the image colormap
-        
+
         call:
-        
+
         SetColormap(cmap, [contrast, bias])
-        
+
         where:
-        
+
         -  cmap: colormap name
         -  contrast: contrast value (range: 0 to 10)
         -  bias: bias value (range 0 to 1)
-        
+
         Set the current colormap, contrast/bias, or both. This call takes one
         (colormap), two (contrast, bias) or three (colormap, contrast, bias)
         arguments.
@@ -665,13 +711,13 @@ class JS9(object):
     def GetZoom(self, *args):
         """
         Get the image zoom factor
-        
+
         call:
-        
+
         zoom  = GetZoom()
-        
+
         returns:
-        
+
         -  zoom: floating point zoom factor
         """
         return self.send({"cmd": "GetZoom", "args": args})
@@ -679,17 +725,17 @@ class JS9(object):
     def SetZoom(self, *args):
         """
         Set the image zoom factor
-        
+
         call:
-        
+
         SetZoom(zoom)
-        
+
         where:
-        
+
         -  zoom: floating or integer zoom factor or zoom directive string
-        
+
         The zoom directives are:
-        
+
         -  x[n]\|X[n]: multiply the zoom by n (e.g. "x2")
         -  /[n]: divide the zoom by n (e.g. "/2")
         -  in\|In: zoom in by a factor of two
@@ -701,17 +747,17 @@ class JS9(object):
     def GetPan(self, *args):
         """
         Get the image pan position
-        
+
         call:
-        
+
         ipos  = GetPan()
-        
+
         returns:
-        
+
         -  ipos: object containing image information for pan
-        
+
         The returned ipos object will contain the following properties:
-        
+
         -  x: x image coordinate of center
         -  y: y image coordinate of center
         """
@@ -720,16 +766,16 @@ class JS9(object):
     def SetPan(self, *args):
         """
         Set the image pan position
-        
+
         call:
-        
+
         SetPan(x, y)
-        
+
         where:
-        
+
         -  x: x image coordinate
         -  y: y image coordinate
-        
+
         Set the current pan position using image coordinates. Note that you can
         use JS9.WCSToPix() and JS9.PixToWCS() to convert between image
         and WCS coordinates.
@@ -739,17 +785,17 @@ class JS9(object):
     def GetScale(self, *args):
         """
         Get the image scale
-        
+
         call:
-        
+
         scale  = GetScale()
-        
+
         returns:
-        
+
         -  scale: object containing scale information
-        
+
         The returned scale object will contain the following properties:
-        
+
         -  scale: scale name
         -  scalemin: min value for scaling
         -  scalemax: max value for scaling
@@ -759,17 +805,17 @@ class JS9(object):
     def SetScale(self, *args):
         """
         Set the image scale
-        
+
         call:
-        
+
         SetScale(scale, smin, smax)
-        
+
         where:
-        
+
         -  scale: scale name
         -  smin: scale min value
         -  smax: scale max value
-        
+
         Set the current scale, min/max, or both. This call takes one (scale),
         two (smin, max) or three (scale, smin, smax) arguments.
         """
@@ -778,22 +824,22 @@ class JS9(object):
     def GetValPos(self, *args):
         """
         Get value/position information
-        
+
         call:
-        
+
         valpos  = GetValPos(ipos)
-        
+
         where:
-        
+
         -  ipos: image position object containing x and y image coord values
-        
+
         returns:
-        
+
         -  valpos: value/position object
-        
+
         This routine determines the data value at a given image position and
         returns an object containing the following information:
-        
+
         -  ix: image x coordinate
         -  iy: image y coordinate
         -  isys: image system (i.e. "image")
@@ -816,49 +862,49 @@ class JS9(object):
     def PixToWCS(self, *args):
         """
         Convert image pixel position to WCS position
-        
+
         call:
-        
+
         wcsobj  = PixToWCS(x, y)
-        
+
         where:
-        
+
         -  x: x image coordinate
         -  y: y image coordinate
-        
+
         returns:
-        
+
         -  wcsobj: world coordinate system object
-        
+
         The wcs object contains the following properties:
-        
+
         -  ra: right ascension in floating point degrees
         -  dec: declination in floating point degrees
         -  sys: current world coordinate system being used
         -  str: string of wcs in current system ("[ra] [dec] [sys]")
-        
+
         """
         return self.send({"cmd": "PixToWCS", "args": args})
 
     def WCSToPix(self, *args):
         """
         Convert WCS position to image pixel position
-        
+
         call:
-        
+
         pixobj  = WCSToPix(ra, dec)
-        
+
         where:
-        
+
         -  ra: right ascension in floating point degrees
         -  dec: declination in floating point degrees
-        
+
         returns:
-        
+
         -  pixobj: pixel object
-        
+
         The pixel object contains the following properties:
-        
+
         -  x: x image coordinate
         -  y: y image coordinate
         -  str: string of pixel values ("[x]" "[y]")
@@ -868,45 +914,45 @@ class JS9(object):
     def ImageToDisplayPos(self, *args):
         """
         Get the display coordinates from the image coordinates
-        
+
         call:
-        
+
         dpos  = ImageToDisplayPos(ipos)
-        
+
         where:
-        
+
         -  ipos: image position object containing x and y image coordinate
            values
-        
+
         returns:
-        
+
         -  dpos: display position object containing x and y display
            coordinate values
-        
-        Get display (screen) coordinates from image coordinates. Note that image
-        coordinates are one-indexed, as per FITS conventions, while display
-        coordinate are 0-indexed.
+
+        Get display (screen) coordinates from image coordinates. Note that
+        image coordinates are one-indexed, as per FITS conventions, while
+        display coordinate are 0-indexed.
         """
         return self.send({"cmd": "ImageToDisplayPos", "args": args})
 
     def DisplayToImagePos(self, *args):
         """
         Get the image coordinates from the display coordinates
-        
+
         call:
-        
+
         ipos  = DisplayToImagePos(dpos)
-        
+
         where:
-        
+
         -  dpos: display position object containing x and y display
            coordinate values
-        
+
         returns:
-        
+
         -  ipos: image position object containing x and y image coordinate
            values
-        
+
         Note that image coordinates are one-indexed, as per FITS conventions,
         while display coordinate are 0-indexed.
         """
@@ -915,75 +961,75 @@ class JS9(object):
     def ImageToLogicalPos(self, *args):
         """
         Get the logical coordinates from the image coordinates
-        
+
         call:
-        
+
         lpos  = ImageToLogicalPos(ipos, lcs)
-        
+
         where:
-        
+
         -  ipos: image position object containing x and y image coordinate
            values
-        
+
         returns:
-        
+
         -  lpos: logical position object containing x and y logical
            coordinate values
-        
+
         Logical coordinate systems include: "physical" (defined by LTM/LTV
         keywords in a FITS header), "detector" (DTM/DTV keywords), and
         "amplifier" (ATM/ATV keywords). Physical coordinates are the most
         common. In the world of X-ray astronomy, they refer to the "zoom 1"
         coordinates of the data file.
 
-        This routine will convert from image to logical coordinates. By default,
-        the current logical coordinate system is used. You can specify a
-        different logical coordinate system (assuming the appropriate keywords
-        have been defined).
+        This routine will convert from image to logical coordinates. By
+        default, the current logical coordinate system is used. You can specify
+        a different logical coordinate system (assuming the appropriate
+        keywords have been defined).
         """
         return self.send({"cmd": "ImageToLogicalPos", "args": args})
 
     def LogicalToImagePos(self, *args):
         """
         Get the image coordinates from the logical coordinates
-        
+
         call:
-        
+
         ipos  = LogicalToImagePos(lpos, lcs)
-        
+
         where:
-        
+
         -  lpos: logical position object containing x and y logical
            coordinate values
-        
+
         returns:
-        
+
         -  ipos: image position object containing x and y image coordinate
            values
-        
+
         Logical coordinate systems include: "physical" (defined by LTM/LTV
         keywords in a FITS header), "detector" (DTM/DTV keywords), and
         "amplifier" (ATM/ATV keywords). Physical coordinates are the most
         common. In the world of X-ray astronomy, they refer to the "zoom 1"
         coordinates of the data file.
 
-        This routine will convert from logical to image coordinates. By default,
-        the current logical coordinate system is used. You can specify a
-        different logical coordinate system (assuming the appropriate keywords
-        have been defined).
+        This routine will convert from logical to image coordinates. By
+        default, the current logical coordinate system is used. You can specify
+        a different logical coordinate system (assuming the appropriate
+        keywords have been defined).
         """
         return self.send({"cmd": "LogicalToImagePos", "args": args})
 
     def GetWCSUnits(self, *args):
         """
         Get the current WCS units
-        
+
         call:
-        
+
         unitsstr  = GetWCSUnits()
-        
+
         returns:
-        
+
         -  unitstr: "pixels", "degrees" or "sexagesimal"
         """
         return self.send({"cmd": "GetWCSUnits", "args": args})
@@ -991,15 +1037,15 @@ class JS9(object):
     def SetWCSUnits(self, *args):
         """
         Set the current WCS units
-        
+
         call:
-        
+
         SetWCSUnits(unitsstr)
-        
+
         where:
-        
+
         -  unitstr: "pixels", "degrees" or "sexagesimal"
-        
+
         Set the current WCS units.
         """
         return self.send({"cmd": "SetWCSUnits", "args": args})
@@ -1007,13 +1053,13 @@ class JS9(object):
     def GetWCSSys(self, *args):
         """
         Get the current World Coordinate System
-        
+
         call:
-        
+
         sysstr  = GetWCSSys()
-        
+
         returns:
-        
+
         -  sysstr: current World Coordinate System ("FK4", "FK5", "ICRS",
            "galactic", "ecliptic", "image", or "physical");
         """
@@ -1022,65 +1068,65 @@ class JS9(object):
     def SetWCSSys(self, *args):
         """
         Set the current World Coordinate System
-        
+
         call:
-        
+
         SetWCSSys(sysstr)
-        
+
         where:
-        
+
         -  sysstr: World Coordinate System ("FK4", "FK5", "ICRS",
            "galactic", "ecliptic", "image", or "physical")
-        
+
         Set current WCS system. The WCS systems are available only if WCS
         information is contained in the FITS header. Also note that "physical"
         coordinates are the coordinates tied to the original file. They are
-        mainly used in X-ray astronomy where individually detected photon events
-        are binned into an image, possibly using a blocking factor. For optical
-        images, image and physical coordinate usually are identical.
+        mainly used in X-ray astronomy where individually detected photon
+        events are binned into an image, possibly using a blocking factor. For
+        optical images, image and physical coordinate usually are identical.
         """
         return self.send({"cmd": "SetWCSSys", "args": args})
 
     def NewShapeLayer(self, *args):
         """
         Create a new shape layer
-        
+
         call:
-        
+
         lid  = NewShapeLayer(layer, opts)
-        
+
         where:
-        
+
         -  layer: name of the layer to create
         -  opts: default options for this layer
-        
+
         returns:
-        
+
         -  lid: layer id
-        
-        This routine creates a new named shape layer. You can then, add, change,
-        and remove shapes in this layer using the routines below. The catalogs
-        displayed by the Catalog plugin are examples of separate shape layers.
-        The optional opts parameter allows you to specify default options
-        for this layer. You can set a default for any property needed by your
-        shape layer. See JS9.Regions.opts in js9.js for an example of the
-        default options for the regions layer.
+
+        This routine creates a new named shape layer. You can then, add,
+        change, and remove shapes in this layer using the routines below. The
+        catalogs displayed by the Catalog plugin are examples of separate shape
+        layers.  The optional opts parameter allows you to specify default
+        options for this layer. You can set a default for any property needed
+        by your shape layer. See JS9.Regions.opts in js9.js for an example of
+        the default options for the regions layer.
         """
         return self.send({"cmd": "NewShapeLayer", "args": args})
 
     def ShowShapeLayer(self, *args):
         """
         Show or hide the specified shape layer
-        
+
         call:
-        
+
         ShowShapeLayer(layer, mode)
-        
+
         where:
-        
+
         -  layer: name of layer
         -  mode: true (show layer) or false (hide layer)
-        
+
         Shape layers can be hidden from display. This could be useful, for
         example, if you have several catalogs loaded into a display and want to
         view one at a time.
@@ -1090,26 +1136,26 @@ class JS9(object):
     def AddShapes(self, *args):
         """
         Add one or more shapes to the specified layer
-        
+
         call:
-        
+
         AddShapes(layer, sarr, opts)
-        
+
         where:
-        
+
         -  layer: name of layer
         -  sarr: a shape string, shape object, or an array of shape objects
         -  opts: global values to apply to each created shape
-        
+
         returns:
-        
+
         -  id: id of last shape created
-        
+
         The sarr argument can be a shape ("annulus", "box", "circle",
         "ellipse", "point", "polygon", "text"), a single shape object, or an
-        array of shape objects. Shape objects contain one or more properties, of
-        which the most important are:
-        
+        array of shape objects. Shape objects contain one or more properties,
+        of which the most important are:
+
         -  shape: "annulus", "box", "circle", "ellipse", "point", "polygon",
            "text" [REQUIRED]
         -  x: image x position
@@ -1129,9 +1175,9 @@ class JS9(object):
         -  angle: angle in degrees for box and ellipse shapes
         -  color: shape color (string name or #rrggbb syntax)
         -  text: text associated with text shape
-        
+
         Other available properties include:
-        
+
         -  fixinplace: if true, shape cannot be moved or resized
         -  lockMovementX: shape cannot be moved in the x direction
         -  lockMovementY: shape cannot be moved in the y direction
@@ -1148,13 +1194,13 @@ class JS9(object):
     def RemoveShapes(self, *args):
         """
         Remove one or more shapes from the specified shape layer
-        
+
         call:
-        
+
         RemoveShapes(layer, shapes)
-        
+
         where:
-        
+
         -  layer: name of layer
         -  shapes: which shapes to remove
         """
@@ -1164,22 +1210,22 @@ class JS9(object):
         """
         Get information about one or more shapes in the specified shape
         layer
-        
+
         call:
-        
+
         GetShapes(layer, shapes)
-        
+
         where:
-        
+
         -  layer: name of layer
         -  shapes: which shapes to retrieve
-        
+
         returns:
-        
+
         -  sarr: array of shape objects
-        
+
         Each returned shape object contains the following properties:
-        
+
         -  id: numeric region id (assigned by JS9 automatically)
         -  mode: "add", "remove", or "change"
         -  shape: region shape ("annulus", "box", "circle", "ellipse",
@@ -1200,17 +1246,17 @@ class JS9(object):
     def ChangeShapes(self, *args):
         """
         Change one or more shapes in the specified layer
-        
+
         call:
-        
+
         ChangeShapes(layer, shapes, opts)
-        
+
         where:
-        
+
         -  layer: name of layer
         -  shapes: which shapes to change
         -  opts: object containing options to change in each shape
-        
+
         Change one or more shapes. The opts object can contain the parameters
         described in the JS9.AddShapes() section. However, you cannot (yet)
         change the shape itself (e.g. from "box" to "circle").
@@ -1220,25 +1266,25 @@ class JS9(object):
     def AddRegions(self, *args):
         """
         Add one or more regions to the regions layer
-        
+
         call:
-        
+
         id  = AddRegions(rarr, opts)
-        
+
         where:
-        
+
         -  rarr: a shape string, region object or an array of region objects
         -  opts: global values to apply to each created region
-        
+
         returns:
-        
+
         -  id: id of last region created
-        
+
         The rarr argument can be a region shape ("annulus", "box", "circle",
         "ellipse", "point", "polygon", "text"), a single region object, or an
         array of region objects. Region objects contain one or more properties,
         of which the most important are:
-        
+
         -  shape: "annulus", "box", "circle", "ellipse", "point", "polygon",
            "text" [REQUIRED]
         -  x: image x position
@@ -1259,9 +1305,9 @@ class JS9(object):
         -  angle: angle in degrees for box and ellipse regions
         -  color: region color (string name or #rrggbb syntax)
         -  text: text associated with text region
-        
+
         Other available properties include:
-        
+
         -  fixinplace: if true, region cannot be moved or resized
         -  lockMovementX: region cannot be moved in the x direction
         -  lockMovementY: region cannot be moved in the y direction
@@ -1278,21 +1324,21 @@ class JS9(object):
     def GetRegions(self, *args):
         """
         Get information about one or more regions
-        
+
         call:
-        
+
         rarr  = GetRegions(regions)
-        
+
         where:
-        
+
         -  regions: which regions to retrieve
-        
+
         returns:
-        
+
         -  rarr: array of region objects
-        
+
         Each returned region object contains the following properties:
-        
+
         -  id: numeric region id (assigned by JS9 automatically)
         -  mode: "add", "remove" or "change"
         -  shape: region shape ("annulus", "box", "circle", "ellipse",
@@ -1321,16 +1367,16 @@ class JS9(object):
     def ChangeRegions(self, *args):
         """
         Change one or more regions
-        
+
         call:
-        
+
         ChangeRegions(regions, opts)
-        
+
         where:
-        
+
         -  regions: which regions to change
         -  opts: object containing options to change in each region
-        
+
         Change one or more regions. The opts object can contain the parameters
         described in the JS9.AddRegions() section. However, you cannot (yet)
         change the shape itself (e.g. from "box" to "circle"). See
@@ -1341,13 +1387,13 @@ class JS9(object):
     def RemoveRegions(self, *args):
         """
         Remove one or more regions from the region layer
-        
+
         call:
-        
+
         RemoveRegions(regions)
-        
+
         where:
-        
+
         -  regions: which regions to remove
         """
         return self.send({"cmd": "RemoveRegions", "args": args})
@@ -1355,16 +1401,16 @@ class JS9(object):
     def RunAnalysis(self, *args):
         """
         Run a simple server-side analysis task
-        
+
         call:
-        
+
         RunAnalysis(name, parr)
-        
+
         where:
-        
+
         -  name: name of analysis tool
         -  parr: optional array of macro-expansion options for command line
-        
+
         The JS9.RunAnalysis() routine is used to execute a server-side analysis
         task and return the results for further processing within JS9.
 
@@ -1376,9 +1422,9 @@ class JS9(object):
         macro expander so that values can be added to the command line. The
         array is in jQuery name/value serialized object format, which is
         described here:
-        
+
                 http://api.jquery.com/serializeArray/
-        
+
         """
         return self.send({"cmd": "RunAnalysis", "args": args})
 
@@ -1390,18 +1436,19 @@ class JS9(object):
     def DisplayHelp(self, *args):
         """
         Display help in a light window
-        
+
         call:
-        
+
         DisplayHelp(name)
-        
+
         where:
-        
+
         -  name: name of a help file or url of a Web site to display
-        
-        The help file names are the property names in JS9.helpOpts (e.g., "user"
-        for the user page, "install" for the install page, etc.). Alternatively,
-        you can specify an arbitrary URL to display (just because).
+
+        The help file names are the property names in JS9.helpOpts (e.g.,
+        "user" for the user page, "install" for the install page, etc.).
+        Alternatively, you can specify an arbitrary URL to display (just
+        because).
         """
         return self.send({"cmd": "DisplayHelp", "args": args})
 
@@ -1412,7 +1459,7 @@ class JS9(object):
         This is a commmand-style routine, easier to type than the full routine
         at the expense of some flexibility:
           - with no arguments, the getter is called to retrieve current values.
-          - with arguments, the setter is called to set current values. 
+          - with arguments, the setter is called to set current values.
 
         Returned results are of type string.
         """
@@ -1425,7 +1472,7 @@ class JS9(object):
         This is a commmand-style routine, easier to type than the full routine
         at the expense of some flexibility:
           - with no arguments, the getter is called to retrieve current values.
-          - with arguments, the setter is called to set current values. 
+          - with arguments, the setter is called to set current values.
 
         Returned results are of type string: 'colormap contrast bias'
         """
@@ -1438,7 +1485,7 @@ class JS9(object):
         This is a commmand-style routine, easier to type than the full routine
         at the expense of some flexibility:
           - with no arguments, the getter is called to retrieve current values.
-          - with arguments, the setter is called to set current values. 
+          - with arguments, the setter is called to set current values.
 
         Returned results are of type string: 'colormap contrast bias'
         """
@@ -1460,7 +1507,7 @@ class JS9(object):
         This is a commmand-style routine, easier to type than the full routine
         at the expense of some flexibility:
           - with no arguments, the getter is called to retrieve current values.
-          - with arguments, the setter is called to set current values. 
+          - with arguments, the setter is called to set current values.
 
         Returned results are of type string.
         """
@@ -1490,7 +1537,7 @@ class JS9(object):
         This is a commmand-style routine, easier to type than the full routine
         at the expense of some flexibility:
           - with no arguments, the getter is called to retrieve current values.
-          - with arguments, the setter is called to set current values. 
+          - with arguments, the setter is called to set current values.
 
         Returned results are of type string: 'x y'
         """
@@ -1503,7 +1550,7 @@ class JS9(object):
         This is a commmand-style routine, easier to type than the full routine
         at the expense of some flexibility:
           - with no arguments, the getter is called to retrieve current values.
-          - with arguments, the setter is called to set current values. 
+          - with arguments, the setter is called to set current values.
 
         Returned results are of type string.
         """
@@ -1516,7 +1563,7 @@ class JS9(object):
         This is a commmand-style routine, easier to type than the full routine
         at the expense of some flexibility:
           - with no arguments, the getter is called to retrieve current values.
-          - with arguments, the setter is called to set current values. 
+          - with arguments, the setter is called to set current values.
 
         Returned results are of type string.
         """
@@ -1529,7 +1576,7 @@ class JS9(object):
         This is a commmand-style routine, easier to type than the full routine
         at the expense of some flexibility:
           - with no arguments, the getter is called to retrieve current values.
-          - with arguments, the setter is called to set current values. 
+          - with arguments, the setter is called to set current values.
 
         Returned results are of type string: 'scale scalemin scalemax'
         """
@@ -1551,7 +1598,7 @@ class JS9(object):
         This is a commmand-style routine, easier to type than the full routine
         at the expense of some flexibility:
           - with no arguments, the getter is called to retrieve current values.
-          - with arguments, the setter is called to set current values. 
+          - with arguments, the setter is called to set current values.
 
         Returned results are of type string.
         """
@@ -1564,7 +1611,7 @@ class JS9(object):
         This is a commmand-style routine, easier to type than the full routine
         at the expense of some flexibility:
           - with no arguments, the getter is called to retrieve current values.
-          - with arguments, the setter is called to set current values. 
+          - with arguments, the setter is called to set current values.
 
         Returned results are of type string.
         """
@@ -1595,7 +1642,7 @@ class JS9(object):
         This is a commmand-style routine, easier to type than the full routine
         at the expense of some flexibility:
           - with no arguments, the getter is called to retrieve current values.
-          - with arguments, the setter is called to set current values. 
+          - with arguments, the setter is called to set current values.
 
         Returned results are type integer or float.
         """

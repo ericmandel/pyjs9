@@ -20,4 +20,6 @@ setup(name='pyjs9',
       url='http://js9.si.edu',
       license='MIT',
       packages=['pyjs9'],
+      install_requires=['six', 'requests'],
+      extras_require={'all': ['numpy', 'astropy']},
       zip_safe=False)

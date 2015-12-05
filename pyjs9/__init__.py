@@ -507,6 +507,45 @@ class JS9(object):
         """
         return self.send({"cmd": "Load", "args": args})
 
+    def LoadProxy(self, *args):
+        """
+        Load an FITS image link into JS9 using a proxy server
+
+        call:
+
+        Load(url, opts)
+
+        where:
+
+        -  url: remote URL link to load
+        -  opts: object containing image parameters
+
+        Load a FITS file specified by an arbitrary URL into JS9 using
+        the JS9 back-end helper as a proxy server. Not all back-end
+        servers support the proxy functionality.  The main JS9 Web
+        site does support proxy service, and can be used to view
+        images from arbitrary URLs.
+
+        The JS9.LoadProxy() call takes a URL as its first argument.
+        This URL will be retrieved using curl or wget and stored on the
+        back-end server in a directory specifically tied to the Web page.
+        (The directory and its contents will be deleted when the page is
+        unloaded.) JS9 then will load the file from this directory.
+        Note that since the file resides on the back-end server, all
+        back-end analysis defined on that server is available.
+
+        To override default image parameters, pass the image opts argument:
+
+          >>> j.LoadProxy("http://hea-www.cfa.harvard.edu/~eric/coma.fits", {"scale":"linear", "colormap":"sls"});
+
+        If an onload callback function is specified in opts, it will be called
+        after the image is loaded:
+
+          >>> j.LoadProxy("http://hea-www.cfa.harvard.edu/~eric/coma.fits", {"scale": "linear", "onload": func});
+
+        """
+        return self.send({"cmd": "LoadProxy", "args": args})
+
     def GetLoadStatus(self, *args):
         """
         Get Load Status
@@ -1433,6 +1472,37 @@ class JS9(object):
         """
         return self.send({"cmd": "Print", "args": args})
 
+    def ResizeDisplay(self, *args):
+        """
+        Change the width and height of the JS9 display
+
+        call:
+
+        ResizeDisplay(width, height)
+
+        where:
+
+        - width: new width of the display in HTML pixels
+        - height: new height of the display in HTML pixels
+        - opts: optional object containing resize parameters
+
+        You can resize the JS9 display element by supplying new width and
+        height parameters. The div on the Web page will be resized and the
+        image will be re-centered in the new display. If the display size has
+        been increased, more of the image will be displayed as needed (up to
+        the new size of the display). For example, if the original display was
+        512x512 and you increase it to 1024x1024, a 1024x1024 image will now
+        be displayed in its entirety.
+
+        The opts object can contain the following properties:
+
+        - resizeMenubar: change the width of the menubar as well
+
+        The default for resizeMenubar is True, so you only need
+        to pass this property if you do not want to perform the resize.
+        """
+        return self.send({"cmd": "ResizeDisplay", "args": args})
+
     def DisplayHelp(self, *args):
         """
         Display help in a light window
@@ -1568,6 +1638,19 @@ class JS9(object):
         Returned results are of type string.
         """
         return self.send({"cmd": "region", "args": args})
+
+    def resize(self, *args):
+        """
+        set/get size of the JS9 display
+
+        This is a commmand-style routine, easier to type than the full routine
+        at the expense of some flexibility:
+          - with no arguments, the getter is called to retrieve current values.
+          - with arguments, the setter is called to set current values.
+
+        Returned results are of type string: 'width height'
+        """
+        return self.send({"cmd": "resize", "args": args})
 
     def scale(self, *args):
         """

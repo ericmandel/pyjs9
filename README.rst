@@ -11,21 +11,24 @@ JS9 brings image display right into your browser::
 - display RGB composite images
 - control JS9 from the command line
 - print images
-- more to come!
+- much more ...
 
 See: http://js9.si.edu for more information about JS9.
 
-pyjs9.py connects python and JS9 via the js9Helper.js back-end server::
+pyjs9.py connects Python and JS9 via the js9Helper.js back-end server::
 
 - The JS9 class constructor connects to a single JS9 instance in a Web page.
 - The JS9 object supports the JS9 Public API and a shorter command-line syntax.
 - See: http://js9.si.edu/js9/help/publicapi.html for info about the public api
-- Send/retrieve numpy arrays and astropy (or pyfits) hdulists to/from js9.
+- Send/retrieve numpy arrays and astropy (or pyfits) hdulists to/from JS9.
 
-Requirements: pyjs9 utilizes the `requests
-<http://www.python-requests.org/en/latest/>` module to communicate with a JS9
-back-end Node server (which communicates with the browser itself).  The JS9
-back-end server must be version 1.2 or higher.
+Requirements: pyjs9 communicates with a JS9 back-end Node server
+(which communicates with the browser itself).  The JS9 back-end server
+must be version 1.2 or higher. By default, pyjs9 utilizes the
+`requests <http://www.python-requests.org/en/latest/>` module to
+communicate with the JS9  back-end server. However, if you install
+`socketIO_client <https://pypi.python.org/pypi/socketIO-client>`,
+pyjs9 will use the faster, persistent `socket.io http://socket.io/` protocol.
 
 Install from the repository using pip, as usual::
 
@@ -42,24 +45,25 @@ Mandatory dependences::
 
 Optional dependences::
 
-    numpy
-    astropy
+    numpy               # support for GetNumpy and SetNumpy methhods
+    astropy             # support for GetFITS and SetFITS methods
+    socketIO-client     # fast, persistent socket.io protocol, instead of html
 
 To run::
 
+        > # ensure JS9 node-server is running ...
+        > # visit your local JS9 Web page in your browser ...
 	> python
         ... (startup messages) ...
-	>>> from pyjs9 import *
-	>>> dir()
-        ['JS9', ..., 'js9Globals']
+	>>> import pyjs9
 	>>>
-	>>> j = JS9()
+	>>> j = pyjs9.JS9()        # default: connect to 'http://localhost'
 	>>>
+	>>> j.GetColormap()
+	{'bias': 0.5, 'colormap': 'grey', 'contrast': 1}
 	>>> j.SetColormap('red')
-	>>> j.GetColormap('red')
-	{'bias': 0.5, 'colormap': 'red', 'contrast': 1}
 	>>> j.cmap()
-	'cool 1 0.5'
+	'red 1 0.5'
 	>>>
 	>>> hdul = j.GetFITS()
 	>>> hdul.info()
@@ -71,14 +75,16 @@ To run::
 	>>> narr.shape
 	(1024, 1024)
 
-Or, if you have relatively fast internet connectivity, open the JS9 Web page
-and::
+If you have internet connectivity, visit the JS9 Web page at
+http://js9.si.edu with your browser and::
 
 	> python
         ... (startup messages) ...
-	>>> from pyjs9 import *
-	>>> dir()
-        ['JS9', ..., 'js9Globals']
+	>>> import pyjs9
 	>>>
-	>>> j = JS9('js9.si.edu')
+	>>> j = pyjs9.JS9('js9.si.edu')        # connect to JS9 Web site
+	>>>
+	>>> j.GetColormap()
+	{'bias': 0.5, 'colormap': 'grey', 'contrast': 1}
+	>>>
 	>>> etc ...

@@ -16,14 +16,16 @@ pyjs9.py connects python and js9 via the js9Helper.js back-end server
 - The JS9 object supports the JS9 Public API and a shorter command-line syntax.
 - See: http://js9.si.edu/js9/help/publicapi.html
 - Send/retrieve numpy arrays and astropy (or pyfits) hdulists to/from js9.
-
+- Use socketIO_client for fast, persistent connections to the JS9 back-end
 """
 
 # pyjs9 version
-__version__ = '1.1'
+__version__ = '1.2'
 
 # try to be a little bit neat with global parameters
 js9Globals = {}
+
+js9Globals['version'] = __version__
 
 # what sort of fits verification gets done on SetFITS() output?
 # see astropy documentation on write method
@@ -54,10 +56,18 @@ try:
 except:
     js9Globals['numpy'] = 0
 
+# load socket.io, if available
+try:
+    from socketIO_client import SocketIO, LoggingNamespace
+    js9Globals['transport'] = 'socketio'
+    js9Globals['wait'] = 10
+except:
+    js9Globals['transport'] = 'html'
+    js9Globals['wait'] = 0
+
 # in python 3 strings are unicode
 if six.PY3:
     unicode = str
-
 
 # utilities
 def _decode_list(data):
@@ -229,10 +239,17 @@ class JS9(object):
         c = host.rfind(':')
         s = host.find('/')
         if(c <= s):
-            host += ":2718"
+            host += ':2718'
         if(s < 0):
             host = 'http://' + host
         self.__dict__['host'] = host
+        # open socket.io connection, if necessary
+        if js9Globals['transport'] == 'socketio':
+            try:
+                a = host.rsplit(':',1)
+                self.sockio = SocketIO(a[0], int(a[1]))
+            except:
+                js9Globals['transport'] = 'html'
         self._alive()
 
     def __setitem__(self, itemname, value):
@@ -247,7 +264,10 @@ class JS9(object):
         """
         An internal routine to send a test message to the helper
         """
-        self.send(None, msg="alive")
+        self.send(None, msg='alive')
+
+    def sockioCB(self, *args):
+        self.__dict__['sockioResult'] = args[0]
 
     def send(self, obj, msg='msg'):
         """
@@ -265,23 +285,32 @@ class JS9(object):
         if obj is None:
             obj = {}
         obj['id'] = self.id
-        jstr = json.dumps(obj)
-        try:
-            url = requests.get(self.host + '/' + msg, params=jstr)
-        except IOError as e:
-            raise IOError("Cannot connect to {0}: {1}".format(self.host,
-                                                              e.strerror))
-        urtn = url.text
-        if 'ERROR:' in urtn:
-            raise ValueError(urtn)
-        try:
-            # TODO: url.json() decode the json for us:
-            # http://www.python-requests.org/en/latest/user/quickstart/#json-response-content
-            # res = url.json()
-            res = json.loads(urtn, object_hook=_decode_dict)
-        except ValueError:   # not json
-            res = urtn
-        return res
+
+        if js9Globals['transport'] == 'html':
+            jstr = json.dumps(obj)
+            try:
+                url = requests.get(self.host + '/' + msg, params=jstr)
+            except IOError as e:
+                raise IOError('Cannot connect to {0}: {1}'.format(self.host,
+                                                                  e.strerror))
+            urtn = url.text
+            if 'ERROR:' in urtn:
+                raise ValueError(urtn)
+            try:
+                # TODO: url.json() decode the json for us:
+                # http://www.python-requests.org/en/latest/user/quickstart/#json-response-content
+                # res = url.json()
+                res = json.loads(urtn, object_hook=_decode_dict)
+            except ValueError:   # not json
+                res = urtn
+            return res
+        else:
+            self.__dict__['sockioResult'] = ''
+            self.sockio.emit('msg', obj, self.sockioCB)
+            self.sockio.wait_for_callbacks(seconds=js9Globals['wait'])
+            if 'ERROR:' in self.__dict__['sockioResult']:
+                raise ValueError(self.__dict__['sockioResult'])
+            return self.__dict__['sockioResult']
 
     if js9Globals['fits']:
         def GetFITS(self):
@@ -345,7 +374,7 @@ class JS9(object):
             # set up JS9 options
             opts = {}
             if name:
-                opts["filename"] = name
+                opts['filename'] = name
             # send encoded file to JS9 for display
             got = self.Load(encstr, opts)
             # finished with memory string
@@ -450,7 +479,7 @@ class JS9(object):
                    'dmin': dmin, 'dmax': dmax, 'encoding': 'base64',
                    'image': encarr}
             if filename:
-                hdu["filename"] = filename
+                hdu['filename'] = filename
             # send encoded file to JS9 for display
             return self.Load(hdu)
 
@@ -503,9 +532,9 @@ class JS9(object):
 
         To override default image parameters, pass the image opts argument:
 
-            >>> j.Load("png/m13.png", {"scale":"linear", "colormap":"sls"})
+            >>> j.Load('png/m13.png', {'scale':'linear', 'colormap':'sls'})
         """
-        return self.send({"cmd": "Load", "args": args})
+        return self.send({'cmd': 'Load', 'args': args})
 
     def LoadProxy(self, *args):
         """
@@ -536,15 +565,15 @@ class JS9(object):
 
         To override default image parameters, pass the image opts argument:
 
-          >>> j.LoadProxy("http://hea-www.cfa.harvard.edu/~eric/coma.fits", {"scale":"linear", "colormap":"sls"});
+          >>> j.LoadProxy('http://hea-www.cfa.harvard.edu/~eric/coma.fits', {'scale':'linear', 'colormap':'sls'});
 
         If an onload callback function is specified in opts, it will be called
         after the image is loaded:
 
-          >>> j.LoadProxy("http://hea-www.cfa.harvard.edu/~eric/coma.fits", {"scale": "linear", "onload": func});
+          >>> j.LoadProxy('http://hea-www.cfa.harvard.edu/~eric/coma.fits', {'scale': 'linear', 'onload': func});
 
         """
-        return self.send({"cmd": "LoadProxy", "args": args})
+        return self.send({'cmd': 'LoadProxy', 'args': args})
 
     def GetLoadStatus(self, *args):
         """
@@ -566,7 +595,7 @@ class JS9(object):
         It is needed in certain cases where JS9.Load() returns before the image
         data is actially loaded into the display.
 
-        A status of "complete" means that the image is fully loaded. Other
+        A status of 'complete' means that the image is fully loaded. Other
         statuses include:
 
         -  loading: the image is in process of loading
@@ -574,7 +603,7 @@ class JS9(object):
         -  other: another image is loaded into this display
         -  none: no image is loaded into this display
         """
-        return self.send({"cmd": "GetLoadStatus", "args": args})
+        return self.send({'cmd': 'GetLoadStatus', 'args': args})
 
     def RefreshImage(self, *args):
         """
@@ -625,7 +654,7 @@ class JS9(object):
         that the former updates the data into an existing image, while the
         latter adds a completely new image to the display.
         """
-        return self.send({"cmd": "RefreshImage", "args": args})
+        return self.send({'cmd': 'RefreshImage', 'args': args})
 
     def CloseImage(self, *args):
         """
@@ -648,7 +677,7 @@ class JS9(object):
         Some day, all browsers will support full 64-bit addressing and this
         problem will go away ...
         """
-        return self.send({"cmd": "CloseImage", "args": args})
+        return self.send({'cmd': 'CloseImage', 'args': args})
 
     def GetImageData(self, *args):
         """Get image data and auxiliary info for the specified image
@@ -671,9 +700,9 @@ class JS9(object):
         -  id: the id of the file that was loaded into JS9
         -  file: the file or URL that was loaded into JS9
         -  fits: the FITS file associated with this image
-        -  source: "fits" if a FITS file was downloaded, "fits2png" if a
+        -  source: 'fits' if a FITS file was downloaded, 'fits2png' if a
            representation file was retrieved
-        -  imtab: "image" for FITS images and png files, "table" for FITS
+        -  imtab: 'image' for FITS images and png files, 'table' for FITS
            binary tables
         -  width: x dimension of image
         -  height: y dimension of image
@@ -689,12 +718,12 @@ class JS9(object):
         Python. While typed arrays are more efficient than ordinary JavaScript
         arrays, this is almost certainly not what you want in Python.
 
-        If dflag is the string "array", a Python list of pixel values is
+        If dflag is the string 'array', a Python list of pixel values is
         returned. Intuitively, this would seem to what is wanted, but ... it
         appears that base64-encoded strings are transferred more quickly
         through the JS9 helper than are binary data.
 
-        If dflag is the string "base64", a base64-encoded string is returned.
+        If dflag is the string 'base64', a base64-encoded string is returned.
         Oddly, this seems to be the fastest method of transferring
         data via socket.io to an external process such as Python, and, in
         fact, is the method used by the pyjs9 numpy and fits routines.
@@ -705,7 +734,7 @@ class JS9(object):
         to the JS9 install directory. For a normal FITS file, the path usually
         is an absolute path to the FITS file.
         """
-        return self.send({"cmd": "GetImageData", "args": args})
+        return self.send({'cmd': 'GetImageData', 'args': args})
 
     def GetColormap(self, *args):
         """
@@ -725,7 +754,7 @@ class JS9(object):
         -  contrast: contrast value (range: 0 to 10)
         -  bias: bias value (range 0 to 1)
         """
-        return self.send({"cmd": "GetColormap", "args": args})
+        return self.send({'cmd': 'GetColormap', 'args': args})
 
     def SetColormap(self, *args):
         """
@@ -745,7 +774,7 @@ class JS9(object):
         (colormap), two (contrast, bias) or three (colormap, contrast, bias)
         arguments.
         """
-        return self.send({"cmd": "SetColormap", "args": args})
+        return self.send({'cmd': 'SetColormap', 'args': args})
 
     def GetZoom(self, *args):
         """
@@ -759,7 +788,7 @@ class JS9(object):
 
         -  zoom: floating point zoom factor
         """
-        return self.send({"cmd": "GetZoom", "args": args})
+        return self.send({'cmd': 'GetZoom', 'args': args})
 
     def SetZoom(self, *args):
         """
@@ -775,13 +804,13 @@ class JS9(object):
 
         The zoom directives are:
 
-        -  x[n]\|X[n]: multiply the zoom by n (e.g. "x2")
-        -  /[n]: divide the zoom by n (e.g. "/2")
+        -  x[n]\|X[n]: multiply the zoom by n (e.g. 'x2')
+        -  /[n]: divide the zoom by n (e.g. '/2')
         -  in\|In: zoom in by a factor of two
         -  out\|Out: zoom out by a factor of two
         -  toFit\|ToFit: zoom to fit image in display
         """
-        return self.send({"cmd": "SetZoom", "args": args})
+        return self.send({'cmd': 'SetZoom', 'args': args})
 
     def GetPan(self, *args):
         """
@@ -800,7 +829,7 @@ class JS9(object):
         -  x: x image coordinate of center
         -  y: y image coordinate of center
         """
-        return self.send({"cmd": "GetPan", "args": args})
+        return self.send({'cmd': 'GetPan', 'args': args})
 
     def SetPan(self, *args):
         """
@@ -819,7 +848,7 @@ class JS9(object):
         use JS9.WCSToPix() and JS9.PixToWCS() to convert between image
         and WCS coordinates.
         """
-        return self.send({"cmd": "SetPan", "args": args})
+        return self.send({'cmd': 'SetPan', 'args': args})
 
     def GetScale(self, *args):
         """
@@ -839,7 +868,7 @@ class JS9(object):
         -  scalemin: min value for scaling
         -  scalemax: max value for scaling
         """
-        return self.send({"cmd": "GetScale", "args": args})
+        return self.send({'cmd': 'GetScale', 'args': args})
 
     def SetScale(self, *args):
         """
@@ -858,7 +887,7 @@ class JS9(object):
         Set the current scale, min/max, or both. This call takes one (scale),
         two (smin, max) or three (scale, smin, smax) arguments.
         """
-        return self.send({"cmd": "SetScale", "args": args})
+        return self.send({'cmd': 'SetScale', 'args': args})
 
     def GetValPos(self, *args):
         """
@@ -881,11 +910,11 @@ class JS9(object):
 
         -  ix: image x coordinate
         -  iy: image y coordinate
-        -  isys: image system (i.e. "image")
+        -  isys: image system (i.e. 'image')
         -  px: physical x coordinate
         -  py: physical y coordinate
-        -  psys: currently selected pixel-based system (i.e. "image" or
-           "physical") for the above px, py values
+        -  psys: currently selected pixel-based system (i.e. 'image' or
+           'physical') for the above px, py values
         -  ra: ra in degrees (if WCS is available)
         -  dec: dec in degrees (if WCS is available)
         -  wcssys: wcs system (if WCS is available)
@@ -896,7 +925,7 @@ class JS9(object):
         -  file: filename of the image
         -  object: object name of the image from the FITS header
         """
-        return self.send({"cmd": "GetValPos", "args": args})
+        return self.send({'cmd': 'GetValPos', 'args': args})
 
     def PixToWCS(self, *args):
         """
@@ -920,10 +949,10 @@ class JS9(object):
         -  ra: right ascension in floating point degrees
         -  dec: declination in floating point degrees
         -  sys: current world coordinate system being used
-        -  str: string of wcs in current system ("[ra] [dec] [sys]")
+        -  str: string of wcs in current system ('[ra] [dec] [sys]')
 
         """
-        return self.send({"cmd": "PixToWCS", "args": args})
+        return self.send({'cmd': 'PixToWCS', 'args': args})
 
     def WCSToPix(self, *args):
         """
@@ -946,9 +975,9 @@ class JS9(object):
 
         -  x: x image coordinate
         -  y: y image coordinate
-        -  str: string of pixel values ("[x]" "[y]")
+        -  str: string of pixel values ('[x]' '[y]')
         """
-        return self.send({"cmd": "WCSToPix", "args": args})
+        return self.send({'cmd': 'WCSToPix', 'args': args})
 
     def ImageToDisplayPos(self, *args):
         """
@@ -972,7 +1001,7 @@ class JS9(object):
         image coordinates are one-indexed, as per FITS conventions, while
         display coordinate are 0-indexed.
         """
-        return self.send({"cmd": "ImageToDisplayPos", "args": args})
+        return self.send({'cmd': 'ImageToDisplayPos', 'args': args})
 
     def DisplayToImagePos(self, *args):
         """
@@ -995,7 +1024,7 @@ class JS9(object):
         Note that image coordinates are one-indexed, as per FITS conventions,
         while display coordinate are 0-indexed.
         """
-        return self.send({"cmd": "DisplayToImagePos", "args": args})
+        return self.send({'cmd': 'DisplayToImagePos', 'args': args})
 
     def ImageToLogicalPos(self, *args):
         """
@@ -1015,10 +1044,10 @@ class JS9(object):
         -  lpos: logical position object containing x and y logical
            coordinate values
 
-        Logical coordinate systems include: "physical" (defined by LTM/LTV
-        keywords in a FITS header), "detector" (DTM/DTV keywords), and
-        "amplifier" (ATM/ATV keywords). Physical coordinates are the most
-        common. In the world of X-ray astronomy, they refer to the "zoom 1"
+        Logical coordinate systems include: 'physical' (defined by LTM/LTV
+        keywords in a FITS header), 'detector' (DTM/DTV keywords), and
+        'amplifier' (ATM/ATV keywords). Physical coordinates are the most
+        common. In the world of X-ray astronomy, they refer to the 'zoom 1'
         coordinates of the data file.
 
         This routine will convert from image to logical coordinates. By
@@ -1026,7 +1055,7 @@ class JS9(object):
         a different logical coordinate system (assuming the appropriate
         keywords have been defined).
         """
-        return self.send({"cmd": "ImageToLogicalPos", "args": args})
+        return self.send({'cmd': 'ImageToLogicalPos', 'args': args})
 
     def LogicalToImagePos(self, *args):
         """
@@ -1046,10 +1075,10 @@ class JS9(object):
         -  ipos: image position object containing x and y image coordinate
            values
 
-        Logical coordinate systems include: "physical" (defined by LTM/LTV
-        keywords in a FITS header), "detector" (DTM/DTV keywords), and
-        "amplifier" (ATM/ATV keywords). Physical coordinates are the most
-        common. In the world of X-ray astronomy, they refer to the "zoom 1"
+        Logical coordinate systems include: 'physical' (defined by LTM/LTV
+        keywords in a FITS header), 'detector' (DTM/DTV keywords), and
+        'amplifier' (ATM/ATV keywords). Physical coordinates are the most
+        common. In the world of X-ray astronomy, they refer to the 'zoom 1'
         coordinates of the data file.
 
         This routine will convert from logical to image coordinates. By
@@ -1057,7 +1086,7 @@ class JS9(object):
         a different logical coordinate system (assuming the appropriate
         keywords have been defined).
         """
-        return self.send({"cmd": "LogicalToImagePos", "args": args})
+        return self.send({'cmd': 'LogicalToImagePos', 'args': args})
 
     def GetWCSUnits(self, *args):
         """
@@ -1069,9 +1098,9 @@ class JS9(object):
 
         returns:
 
-        -  unitstr: "pixels", "degrees" or "sexagesimal"
+        -  unitstr: 'pixels', 'degrees' or 'sexagesimal'
         """
-        return self.send({"cmd": "GetWCSUnits", "args": args})
+        return self.send({'cmd': 'GetWCSUnits', 'args': args})
 
     def SetWCSUnits(self, *args):
         """
@@ -1083,11 +1112,11 @@ class JS9(object):
 
         where:
 
-        -  unitstr: "pixels", "degrees" or "sexagesimal"
+        -  unitstr: 'pixels', 'degrees' or 'sexagesimal'
 
         Set the current WCS units.
         """
-        return self.send({"cmd": "SetWCSUnits", "args": args})
+        return self.send({'cmd': 'SetWCSUnits', 'args': args})
 
     def GetWCSSys(self, *args):
         """
@@ -1099,10 +1128,10 @@ class JS9(object):
 
         returns:
 
-        -  sysstr: current World Coordinate System ("FK4", "FK5", "ICRS",
-           "galactic", "ecliptic", "image", or "physical");
+        -  sysstr: current World Coordinate System ('FK4', 'FK5', 'ICRS',
+           'galactic', 'ecliptic', 'image', or 'physical');
         """
-        return self.send({"cmd": "GetWCSSys", "args": args})
+        return self.send({'cmd': 'GetWCSSys', 'args': args})
 
     def SetWCSSys(self, *args):
         """
@@ -1114,17 +1143,17 @@ class JS9(object):
 
         where:
 
-        -  sysstr: World Coordinate System ("FK4", "FK5", "ICRS",
-           "galactic", "ecliptic", "image", or "physical")
+        -  sysstr: World Coordinate System ('FK4', 'FK5', 'ICRS',
+           'galactic', 'ecliptic', 'image', or 'physical')
 
         Set current WCS system. The WCS systems are available only if WCS
-        information is contained in the FITS header. Also note that "physical"
+        information is contained in the FITS header. Also note that 'physical'
         coordinates are the coordinates tied to the original file. They are
         mainly used in X-ray astronomy where individually detected photon
         events are binned into an image, possibly using a blocking factor. For
         optical images, image and physical coordinate usually are identical.
         """
-        return self.send({"cmd": "SetWCSSys", "args": args})
+        return self.send({'cmd': 'SetWCSSys', 'args': args})
 
     def NewShapeLayer(self, *args):
         """
@@ -1151,7 +1180,7 @@ class JS9(object):
         by your shape layer. See JS9.Regions.opts in js9.js for an example of
         the default options for the regions layer.
         """
-        return self.send({"cmd": "NewShapeLayer", "args": args})
+        return self.send({'cmd': 'NewShapeLayer', 'args': args})
 
     def ShowShapeLayer(self, *args):
         """
@@ -1170,7 +1199,7 @@ class JS9(object):
         example, if you have several catalogs loaded into a display and want to
         view one at a time.
         """
-        return self.send({"cmd": "ShowShapeLayer", "args": args})
+        return self.send({'cmd': 'ShowShapeLayer', 'args': args})
 
     def AddShapes(self, *args):
         """
@@ -1190,13 +1219,13 @@ class JS9(object):
 
         -  id: id of last shape created
 
-        The sarr argument can be a shape ("annulus", "box", "circle",
-        "ellipse", "point", "polygon", "text"), a single shape object, or an
+        The sarr argument can be a shape ('annulus', 'box', 'circle',
+        'ellipse', 'point', 'polygon', 'text'), a single shape object, or an
         array of shape objects. Shape objects contain one or more properties,
         of which the most important are:
 
-        -  shape: "annulus", "box", "circle", "ellipse", "point", "polygon",
-           "text" [REQUIRED]
+        -  shape: 'annulus', 'box', 'circle', 'ellipse', 'point', 'polygon',
+           'text' [REQUIRED]
         -  x: image x position
         -  y: image y position
         -  dx: increment from current image x position
@@ -1228,7 +1257,7 @@ class JS9(object):
         -  fontStyle: font parameter for text shape
         -  fontWeight: font parameter for text shape
         """
-        return self.send({"cmd": "AddShapes", "args": args})
+        return self.send({'cmd': 'AddShapes', 'args': args})
 
     def RemoveShapes(self, *args):
         """
@@ -1243,7 +1272,7 @@ class JS9(object):
         -  layer: name of layer
         -  shapes: which shapes to remove
         """
-        return self.send({"cmd": "RemoveShapes", "args": args})
+        return self.send({'cmd': 'RemoveShapes', 'args': args})
 
     def GetShapes(self, *args):
         """
@@ -1266,11 +1295,11 @@ class JS9(object):
         Each returned shape object contains the following properties:
 
         -  id: numeric region id (assigned by JS9 automatically)
-        -  mode: "add", "remove", or "change"
-        -  shape: region shape ("annulus", "box", "circle", "ellipse",
-           "point", "polygon", "text")
-        -  tags: comma delimited list of region tags (e.g., "source",
-           "include")
+        -  mode: 'add', 'remove', or 'change'
+        -  shape: region shape ('annulus', 'box', 'circle', 'ellipse',
+           'point', 'polygon', 'text')
+        -  tags: comma delimited list of region tags (e.g., 'source',
+           'include')
         -  color: region color
         -  x,y: image coordinates of region
         -  size: object containing width and height for box region
@@ -1280,7 +1309,7 @@ class JS9(object):
         -  pts: array of objects containing x and y positions, for polygons
         -  angle: angle in degrees for box and ellipse regions
         """
-        return self.send({"cmd": "GetShapes", "args": args})
+        return self.send({'cmd': 'GetShapes', 'args': args})
 
     def ChangeShapes(self, *args):
         """
@@ -1298,9 +1327,9 @@ class JS9(object):
 
         Change one or more shapes. The opts object can contain the parameters
         described in the JS9.AddShapes() section. However, you cannot (yet)
-        change the shape itself (e.g. from "box" to "circle").
+        change the shape itself (e.g. from 'box' to 'circle').
         """
-        return self.send({"cmd": "ChangeShapes", "args": args})
+        return self.send({'cmd': 'ChangeShapes', 'args': args})
 
     def AddRegions(self, *args):
         """
@@ -1319,16 +1348,16 @@ class JS9(object):
 
         -  id: id of last region created
 
-        The rarr argument can be a region shape ("annulus", "box", "circle",
-        "ellipse", "point", "polygon", "text"), a single region object, or an
+        The rarr argument can be a region shape ('annulus', 'box', 'circle',
+        'ellipse', 'point', 'polygon', 'text'), a single region object, or an
         array of region objects. Region objects contain one or more properties,
         of which the most important are:
 
-        -  shape: "annulus", "box", "circle", "ellipse", "point", "polygon",
-           "text" [REQUIRED]
+        -  shape: 'annulus', 'box', 'circle', 'ellipse', 'point', 'polygon',
+           'text' [REQUIRED]
         -  x: image x position
         -  y: image y position
-        -  lcs: object containing logical x, y and sys (e.g. "physical")
+        -  lcs: object containing logical x, y and sys (e.g. 'physical')
         -  dx: increment from current image x position
         -  dy: increment from current image y position
         -  tags: comma separated list of tag strings
@@ -1358,7 +1387,7 @@ class JS9(object):
         -  fontStyle: font parameter for text region
         -  fontWeight: font parameter for text region
         """
-        return self.send({"cmd": "AddRegions", "args": args})
+        return self.send({'cmd': 'AddRegions', 'args': args})
 
     def GetRegions(self, *args):
         """
@@ -1379,11 +1408,11 @@ class JS9(object):
         Each returned region object contains the following properties:
 
         -  id: numeric region id (assigned by JS9 automatically)
-        -  mode: "add", "remove" or "change"
-        -  shape: region shape ("annulus", "box", "circle", "ellipse",
-           "point", "polygon", "text")
-        -  tags: comma delimited list of region tags (e.g., "source",
-           "include")
+        -  mode: 'add', 'remove' or 'change'
+        -  shape: region shape ('annulus', 'box', 'circle', 'ellipse',
+           'point', 'polygon', 'text')
+        -  tags: comma delimited list of region tags (e.g., 'source',
+           'include')
         -  color: region color
         -  x,y: image coordinates of region
         -  radii: array of radii for annulus region
@@ -1397,11 +1426,11 @@ class JS9(object):
            specified center, for polygons
         -  angle: angle in degrees for box and ellipse regions
         -  wcsstr: region string in wcs coordinates
-        -  wcssys: wcs system (e.g. "FK5")
+        -  wcssys: wcs system (e.g. 'FK5')
         -  imstr: region string in image or physical coordinates
-        -  imsys: image system ("image" or "physical")
+        -  imsys: image system ('image' or 'physical')
         """
-        return self.send({"cmd": "GetRegions", "args": args})
+        return self.send({'cmd': 'GetRegions', 'args': args})
 
     def ChangeRegions(self, *args):
         """
@@ -1418,10 +1447,10 @@ class JS9(object):
 
         Change one or more regions. The opts object can contain the parameters
         described in the JS9.AddRegions() section. However, you cannot (yet)
-        change the shape itself (e.g. from "box" to "circle"). See
+        change the shape itself (e.g. from 'box' to 'circle'). See
         js9onchange.html for examples of how to use this routine.
         """
-        return self.send({"cmd": "ChangeRegions", "args": args})
+        return self.send({'cmd': 'ChangeRegions', 'args': args})
 
     def RemoveRegions(self, *args):
         """
@@ -1435,7 +1464,7 @@ class JS9(object):
 
         -  regions: which regions to remove
         """
-        return self.send({"cmd": "RemoveRegions", "args": args})
+        return self.send({'cmd': 'RemoveRegions', 'args': args})
 
     def RunAnalysis(self, *args):
         """
@@ -1453,8 +1482,8 @@ class JS9(object):
         The JS9.RunAnalysis() routine is used to execute a server-side analysis
         task and return the results for further processing within JS9.
 
-        The default processing will display "text" in a new light window.
-        If the return type is "plot", the results are assumed to be in flot
+        The default processing will display 'text' in a new light window.
+        If the return type is 'plot', the results are assumed to be in flot
         format and will be plotted.
 
         The optional parr array of parameters is passed to the JS9 analysis
@@ -1465,12 +1494,12 @@ class JS9(object):
                 http://api.jquery.com/serializeArray/
 
         """
-        return self.send({"cmd": "RunAnalysis", "args": args})
+        return self.send({'cmd': 'RunAnalysis', 'args': args})
 
     def Print(self, *args):
         """
         """
-        return self.send({"cmd": "Print", "args": args})
+        return self.send({'cmd': 'Print', 'args': args})
 
     def ResizeDisplay(self, *args):
         """
@@ -1501,7 +1530,7 @@ class JS9(object):
         The default for resizeMenubar is True, so you only need
         to pass this property if you do not want to perform the resize.
         """
-        return self.send({"cmd": "ResizeDisplay", "args": args})
+        return self.send({'cmd': 'ResizeDisplay', 'args': args})
 
     def DisplayHelp(self, *args):
         """
@@ -1516,11 +1545,11 @@ class JS9(object):
         -  name: name of a help file or url of a Web site to display
 
         The help file names are the property names in JS9.helpOpts (e.g.,
-        "user" for the user page, "install" for the install page, etc.).
+        'user' for the user page, 'install' for the install page, etc.).
         Alternatively, you can specify an arbitrary URL to display (just
         because).
         """
-        return self.send({"cmd": "DisplayHelp", "args": args})
+        return self.send({'cmd': 'DisplayHelp', 'args': args})
 
     def analysis(self, *args):
         """
@@ -1533,7 +1562,7 @@ class JS9(object):
 
         Returned results are of type string.
         """
-        return self.send({"cmd": "analysis", "args": args})
+        return self.send({'cmd': 'analysis', 'args': args})
 
     def colormap(self, *args):
         """
@@ -1546,7 +1575,7 @@ class JS9(object):
 
         Returned results are of type string: 'colormap contrast bias'
         """
-        return self.send({"cmd": "colormap", "args": args})
+        return self.send({'cmd': 'colormap', 'args': args})
 
     def cmap(self, *args):
         """
@@ -1559,7 +1588,7 @@ class JS9(object):
 
         Returned results are of type string: 'colormap contrast bias'
         """
-        return self.send({"cmd": "cmap", "args": args})
+        return self.send({'cmd': 'cmap', 'args': args})
 
     def colormaps(self, *args):
         """
@@ -1568,7 +1597,7 @@ class JS9(object):
         No setter routine is provided.
         Returned results are of type string: 'grey, red, ...'
         """
-        return self.send({"cmd": "colormaps", "args": args})
+        return self.send({'cmd': 'colormaps', 'args': args})
 
     def image(self, *args):
         """
@@ -1581,7 +1610,7 @@ class JS9(object):
 
         Returned results are of type string.
         """
-        return self.send({"cmd": "image", "args": args})
+        return self.send({'cmd': 'image', 'args': args})
 
     def images(self, *args):
         """
@@ -1590,7 +1619,7 @@ class JS9(object):
         No setter routine is provided.
         Returned results are of type string.
         """
-        return self.send({"cmd": "images", "args": args})
+        return self.send({'cmd': 'images', 'args': args})
 
     def load(self, *args):
         """
@@ -1598,7 +1627,7 @@ class JS9(object):
 
         No getter routine is provided.
         """
-        return self.send({"cmd": "load", "args": args})
+        return self.send({'cmd': 'load', 'args': args})
 
     def pan(self, *args):
         """
@@ -1611,7 +1640,7 @@ class JS9(object):
 
         Returned results are of type string: 'x y'
         """
-        return self.send({"cmd": "pan", "args": args})
+        return self.send({'cmd': 'pan', 'args': args})
 
     def regions(self, *args):
         """
@@ -1624,7 +1653,7 @@ class JS9(object):
 
         Returned results are of type string.
         """
-        return self.send({"cmd": "regions", "args": args})
+        return self.send({'cmd': 'regions', 'args': args})
 
     def region(self, *args):
         """
@@ -1637,7 +1666,7 @@ class JS9(object):
 
         Returned results are of type string.
         """
-        return self.send({"cmd": "region", "args": args})
+        return self.send({'cmd': 'region', 'args': args})
 
     def resize(self, *args):
         """
@@ -1650,7 +1679,7 @@ class JS9(object):
 
         Returned results are of type string: 'width height'
         """
-        return self.send({"cmd": "resize", "args": args})
+        return self.send({'cmd': 'resize', 'args': args})
 
     def scale(self, *args):
         """
@@ -1663,7 +1692,7 @@ class JS9(object):
 
         Returned results are of type string: 'scale scalemin scalemax'
         """
-        return self.send({"cmd": "scale", "args": args})
+        return self.send({'cmd': 'scale', 'args': args})
 
     def scales(self, *args):
         """
@@ -1672,7 +1701,7 @@ class JS9(object):
         No setter routine is provided.
         Returned results are of type string: 'linear, log, ...'
         """
-        return self.send({"cmd": "scales", "args": args})
+        return self.send({'cmd': 'scales', 'args': args})
 
     def wcssys(self, *args):
         """
@@ -1685,7 +1714,7 @@ class JS9(object):
 
         Returned results are of type string.
         """
-        return self.send({"cmd": "wcssys", "args": args})
+        return self.send({'cmd': 'wcssys', 'args': args})
 
     def wcsu(self, *args):
         """
@@ -1698,7 +1727,7 @@ class JS9(object):
 
         Returned results are of type string.
         """
-        return self.send({"cmd": "wcsu", "args": args})
+        return self.send({'cmd': 'wcsu', 'args': args})
 
     def wcssystems(self, *args):
         """
@@ -1707,7 +1736,7 @@ class JS9(object):
         No setter routine is provided.
         Returned results are of type string: 'FK4, FK5, ...'
         """
-        return self.send({"cmd": "wcssystems", "args": args})
+        return self.send({'cmd': 'wcssystems', 'args': args})
 
     def wcsunits(self, *args):
         """
@@ -1716,7 +1745,7 @@ class JS9(object):
         No setter routine is provided.
         Returned results are of type string: 'degrees, ...'
         """
-        return self.send({"cmd": "wcsunits", "args": args})
+        return self.send({'cmd': 'wcsunits', 'args': args})
 
     def zoom(self, *args):
         """
@@ -1729,4 +1758,4 @@ class JS9(object):
 
         Returned results are type integer or float.
         """
-        return self.send({"cmd": "zoom", "args": args})
+        return self.send({'cmd': 'zoom', 'args': args})

@@ -267,7 +267,10 @@ class JS9(object):
         self.send(None, msg='alive')
 
     def sockioCB(self, *args):
-        self.__dict__['sockioResult'] = args[0]
+        if args[0] != None:
+            self.__dict__['sockioResult'] = args[0]
+        else:
+            self.__dict__['sockioResult'] = "OK"
 
     def send(self, obj, msg='msg'):
         """

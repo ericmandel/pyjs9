@@ -267,10 +267,7 @@ class JS9(object):
         self.send(None, msg='alive')
 
     def sockioCB(self, *args):
-        if args[0] != None:
-            self.__dict__['sockioResult'] = args[0]
-        else:
-            self.__dict__['sockioResult'] = "OK"
+        self.__dict__['sockioResult'] = args[0]
 
     def send(self, obj, msg='msg'):
         """
@@ -311,7 +308,7 @@ class JS9(object):
             self.__dict__['sockioResult'] = ''
             self.sockio.emit('msg', obj, self.sockioCB)
             self.sockio.wait_for_callbacks(seconds=js9Globals['wait'])
-            if 'ERROR:' in self.__dict__['sockioResult']:
+            if self.__dict__['sockioResult'] and 'ERROR:' in self.__dict__['sockioResult']:
                 raise ValueError(self.__dict__['sockioResult'])
             return self.__dict__['sockioResult']
 

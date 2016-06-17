@@ -308,7 +308,7 @@ class JS9(object):
             self.__dict__['sockioResult'] = ''
             self.sockio.emit('msg', obj, self.sockioCB)
             self.sockio.wait_for_callbacks(seconds=js9Globals['wait'])
-            if self.__dict__['sockioResult'] and 'ERROR:' in self.__dict__['sockioResult']:
+            if self.__dict__['sockioResult'] and isinstance(self.__dict__['sockioResult'], str) and 'ERROR:' in self.__dict__['sockioResult']:
                 raise ValueError(self.__dict__['sockioResult'])
             return self.__dict__['sockioResult']
 

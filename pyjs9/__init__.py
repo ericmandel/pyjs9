@@ -2216,11 +2216,10 @@ class JS9(object):
         -  parr: optional array of macro-expansion options for command line
 
         The JS9.RunAnalysis() routine is used to execute a server-side analysis
-        task and return the results for further processing within JS9.
+        task and return the results for further processing within Python.
 
-        The default processing will display 'text' in a new light window.
-        If the return type is 'plot', the results are assumed to be in flot
-        format and will be plotted.
+        NB: Prior to JS9 v1.10, this routine displayed the results on the JS9
+        web page instead of returning them to Python.
 
         The optional parr array of parameters is passed to the JS9 analysis
         macro expander so that values can be added to the command line. The

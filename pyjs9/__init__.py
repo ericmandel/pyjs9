@@ -539,7 +539,7 @@ class JS9(object):
 
         call:
 
-        Load(url, opts)
+        LoadProxy(url, opts)
 
         where:
 
@@ -1010,7 +1010,7 @@ class JS9(object):
 
 	where:
 
-        -- filename: output file name
+        - filename: output file name
 
         Save the current colormap definition for displayed image as a
         json file. If filename is not specified, the file will be
@@ -1100,6 +1100,63 @@ class JS9(object):
 	all JS9 displays on the given page.
 	"""
         return self.send({'cmd': 'AddColormap', 'args': args})
+
+    def GetRGBMode(self, *args):
+        """
+        Get RGB mode information
+
+        call:
+
+        rgbobj  = GetRGBMode()
+
+        returns:
+
+        - rgbobj: RGB mode information
+
+        This routine returns an object containing the following RGB mode
+        information:
+
+        - active: boolean specifying whether RGB mode is active
+        - rid: image id of "red" image
+        - gid: image id of "green" image
+        - bid: image id of "blue" image
+        """
+        return self.send({'cmd': 'GetRGBMode', 'args': args})
+
+    def SetRGBMode(self, *args):
+        """
+        call:
+
+        SetRGBMode(mode, [imobj])
+
+        where:
+
+        - mode: boolean true to activate RGB mode, false to disable
+        - imobj: optional object specifying three images to set to the
+          "red", "green", and "blue" colormaps
+
+        In RGB mode, three images assigned the "red", "green", and "blue"
+        colormaps are displayed as a single image. The RGB color of each
+        displayed pixel is a combination of the "red", "green", and "blue"
+        pixel value taken from the appropriate image. Note that all three
+        images are not required: you can display an RGB image using two of
+        the three colors simply by not assigning the third colormap.
+
+        The SetRGBMode() call turns on or off RGB mode. The
+        boolean mode argument specifies whether to activate or
+        de-activate RGB mode. The optional imobj object specifies
+        (already-loaded) images to assign to the three colormaps:
+
+        - rid: image id (or handle) to set to the "red" colormap
+        - gid: image id (or handle) to set to the "green" colormap
+        - bid: image id (or handle) to set to the "blue" colormap
+
+        If imobj is not specified, it is assumed that images have been
+        assigned the "red", "green", and "blue" colormaps by another means.
+        (Once again, it is not necessary to assign all three colormaps.)
+
+        """
+        return self.send({'cmd': 'SetRGBMode', 'args': args})
 
     def GetZoom(self, *args):
         """

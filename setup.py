@@ -5,13 +5,13 @@ def readme():
         return f.read()
 
 setup(name='pyjs9',
-      version='1.0',
+      version='1.4',
       description='Python/JS9 connection, with numpy and astropy/fits support',
       long_description=readme(),
       author='Eric Mandel',
       author_email='saord@cfa.harvard.edu',
       classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 2.7',
         'Topic :: Scientific/Engineering :: Astronomy',

@@ -20,7 +20,7 @@ pyjs9.py connects python and js9 via the js9Helper.js back-end server
 """
 
 # pyjs9 version
-__version__ = '1.3'
+__version__ = '1.4'
 
 # try to be a little bit neat with global parameters
 js9Globals = {}
@@ -81,7 +81,6 @@ def _decode_list(data):
             item = _decode_dict(item)
         rv.append(item)
     return rv
-
 
 def _decode_dict(data):
     rv = {}
@@ -191,7 +190,6 @@ if js9Globals['numpy']:
         else:
             raise ValueError('unknown retrieveAs type for GetImageData()')
         return arr
-
 
 class JS9(object):
     """
@@ -1016,6 +1014,9 @@ class JS9(object):
         json file. If filename is not specified, the file will be
         saved as "js9.cmap".  This is useful if you want to edit the
         current definition to make a new colormap.
+
+        Don't forget that the file is saved by the browser, in whatever
+        location you have set up for downloads.
         """
         return self.send({'cmd': 'SaveColormap', 'args': args})
 
@@ -1865,6 +1866,9 @@ class JS9(object):
         usual rules of json formatting. For example, you can change the
         colormap, scaling, etc. after the fact.
 
+        Don't forget that the file is saved by the browser, in whatever
+        location you have set up for downloads.
+
 	The session file contains a file property near the top that
 	specifies the location of the image. A local file usually will
 	contain an absolute path or a path relative to the web page
@@ -1957,6 +1961,34 @@ class JS9(object):
         view one at a time.
         """
         return self.send({'cmd': 'ShowShapeLayer', 'args': args})
+
+    def ActiveShapeLayer(self, *args):
+        """
+        Make the specified shape layer the active layer
+
+        call:
+
+        ActiveShapeLayer(layer)
+
+        where:
+
+        - layer: name of layer
+
+        returns:
+
+        -  active: the active shape layer (if no args are specified)
+
+        For a given image, one shape layer at a time is active, responding to
+        mouse and touch events. Ordinarily, a shape layer becomes the active
+        layer when it is first created and shapes are added to it. Thus, the
+        first time you create a region, the regions layer becomes active. If
+        you then load a catalog into a catalog layer, that layer becomes active.
+
+        If no arguments are supplied, the routine returns the currently active
+        layer. Specify the name of a layer as the first argument to make it
+        active. Note that the specified layer must be visible.
+        """
+        return self.send({'cmd': 'ActiveShapeLayer', 'args': args})
 
     def AddShapes(self, *args):
         """
@@ -2229,15 +2261,29 @@ class JS9(object):
 
 	call:
 
-	JS9.SaveRegions(filename, which)
+	JS9.SaveRegions(filename, which, layer)
 
 	where:
 
 	- filename: output file name
 	- which: which regions to save (default is "all")
+        - layer: which layer save (default is "regions")
 
 	Save the current regions for the displayed image as JS9 regions file. If
 	filename is not specified, the file will be saved as "js9.reg".
+
+        Don't forget that the file is saved by the browser, in whatever
+        location you have set up for downloads.
+
+        If the which argument is not specified, it defaults to "all". You
+        can specify "selected" to return information about the selected
+        regions, or a tag value to save regions having that tag.
+
+        If the layer argument is not specified, it defaults to "regions",
+        i.e.  the usual regions layer. You can specify a different layer,
+        e.g., if you want to save a catalog layer as a region file
+        (since SaveCatalog() will save the data in table format instead
+        of as regions).
 	"""
         return self.send({'cmd': 'SaveRegions', 'args': args})
 
@@ -2258,6 +2304,90 @@ class JS9(object):
 	path relative to the displayed web page) or a URL.
 	"""
         return self.send({'cmd': 'LoadRegions', 'args': args})
+
+    def LoadCatalog(self, *args):
+	"""
+        Load an astronomical catalog
+
+	call:
+
+	JS9.LoadCatalog(layer, table, opts)
+
+	where:
+
+        - name of shape layer into which to load the catalog
+        - table: string or blob containing the catalog table
+        - opts: catalog options
+
+        Astronomical catalogs are a special type of JS9 shape layer, in which
+        the shapes have been generated from a tab-delimited text file of
+        columns, including two columns that contain RA and Dec values. An
+        astronomical catalog can have a pre-amble of comments, which, by
+        default, have a '#' character in the first column.
+
+        The JS9.LoadCatalog() routine will read a file in this format,
+        processing the data rows by converting the RA and Dec values into
+        image position values that will be displayed as shapes in a new
+        catalog layer.
+
+        The first argument to the JS9.LoadCatalog() routine is the name
+        of the shape layer that will contain the objects in the catalog.
+        Specifying the name of an existing layer is valid: previous shapes
+        in that layer will be removed.
+
+        The second argument should be a string containing the table
+        data described above (the result of reading a file, performing
+        a URL get, etc.)
+
+        The third argument is an optional object used to specify parameters,
+        including:
+
+        - xcol: name of the RA column in the table
+        - ycol: name of the Dec column in the table
+        - wcssys: wcs system (FK4, FK5, ICRS, galactic, ecliptic)
+        - shape: shape of catalog object
+        - color: color of catalog shapes
+        - width: width of box catalog shapes
+        - height: height of box catalog shapes
+        - radius: radius of circle catalog shapes
+        - r1: r1 of ellipse catalog shapes
+        - r2: r2 of ellipse catalog shapes
+        - tooltip: format of tooltip string to display for each object
+        - skip: comment character in table file
+
+        Most of these properties have default values that are stored
+        in the JS9.globalOpts.catalogs object. The values listed above
+        also can be changed by users via the Catalog tab in the
+        Preferences plugin.
+
+        """
+        return self.send({'cmd': 'LoadCatalog', 'args': args})
+
+    def SaveCatalog(self, *args):
+	"""
+        Save an astronomical catalog to a file
+
+	call:
+
+	JS9.SaveCatalog(filename, which)
+
+	where:
+
+        - filename: output file name
+        - which: layer containing catalog objects to save
+
+        Save the specified catalog layer as a text file. If filename is not
+        specified, the file will be saved as [layer].cat.
+
+        Don't forget that the file is saved by the browser, in whatever
+        location you have set up for downloads.
+
+        If the which argument is not specified, the catalog associated
+        with the current active layer will be saved. In either case, the
+        layer to save must actually be a catalog created from a tab-delimited
+        file (or URL) of catalog objects (not, for example, the regions layer).
+	"""
+        return self.send({'cmd': 'SaveCatalog', 'args': args})
 
     def RunAnalysis(self, *args):
         """
@@ -2302,6 +2432,9 @@ class JS9(object):
 	Save the currently displayed image as a PNG file. If filename is not
 	specified, the file will be saved as "js9.png". The image is saved
 	along with the graphical overlays (regions, etc.).
+
+        Don't forget that the file is saved by the browser, in whatever
+        location you have set up for downloads.
 	"""
         return self.send({'cmd': 'SavePNG', 'args': args})
 
@@ -2323,6 +2456,9 @@ class JS9(object):
 	along with the graphical overlays (regions, etc.). If quality
 	parameter is not specified, a suitable default is used. On FireFox (at
 	least), this default values is 0.95 (I think).
+
+        Don't forget that the file is saved by the browser, in whatever
+        location you have set up for downloads.
 	"""
         return self.send({'cmd': 'SaveJPEG', 'args': args})
 

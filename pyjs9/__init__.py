@@ -958,6 +958,23 @@ class JS9(object):
         """
         return self.send({'cmd': 'BlendImage', 'args': args})
 
+    def BlendDisplay(self, *args):
+        """
+        Set global blend mode for specified display
+
+        call:
+
+        mode = BlendDisplay(True|False)
+
+        returns:
+
+        - mode: current image blend mode
+
+        This will turn on/off the image blend mode for the specified display.
+        If no argument is specified, it returns the current blend mode.
+        """
+        return self.send({'cmd': 'BlendDisplay', 'args': args})
+
     def GetColormap(self, *args):
         """
         Get the image colormap

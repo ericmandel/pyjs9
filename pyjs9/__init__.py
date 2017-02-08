@@ -970,8 +970,9 @@ class JS9(object):
 
         - mode: current image blend mode
 
-        This will turn on/off the image blend mode for the specified display.
-        If no argument is specified, it returns the current blend mode.
+        This routine will turn on/off the global image blend mode for the
+        specified display. If no argument is specified, it returns the current
+        blend mode.
         """
         return self.send({'cmd': 'BlendDisplay', 'args': args})
 

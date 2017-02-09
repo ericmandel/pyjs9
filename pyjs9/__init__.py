@@ -2424,7 +2424,8 @@ class JS9(object):
         task and return the results for further processing within Python.
 
         NB: Prior to JS9 v1.10, this routine displayed the results on the JS9
-        web page instead of returning them to Python.
+        web page instead of returning them to Python. If you want to display
+        the results in JS9, use the "analysis" short-cut routine instead.
 
         The optional parr array of parameters is passed to the JS9 analysis
         macro expander so that values can be added to the command line. The

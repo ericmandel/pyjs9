@@ -39,21 +39,21 @@ js9Globals['retrieveAs'] = 'base64'
 try:
     from astropy.io import fits
     js9Globals['fits'] = 1
-except:
+except ImportError:
     try:
         import pyfits as fits
         if fits.__version__ >= '2.2':
             js9Globals['fits'] = 2
         else:
             js9Globals['fits'] = 0
-    except:
+    except ImportError:
         js9Globals['fits'] = 0
 
 # load numpy, if available
 try:
     import numpy
     js9Globals['numpy'] = 1
-except:
+except ImportError:
     js9Globals['numpy'] = 0
 
 # load socket.io, if available
@@ -61,13 +61,14 @@ try:
     from socketIO_client import SocketIO, LoggingNamespace
     js9Globals['transport'] = 'socketio'
     js9Globals['wait'] = 10
-except:
+except ImportError:
     js9Globals['transport'] = 'html'
     js9Globals['wait'] = 0
 
 # in python 3 strings are unicode
 if six.PY3:
     unicode = str
+
 
 # utilities
 def _decode_list(data):
@@ -82,6 +83,7 @@ def _decode_list(data):
         rv.append(item)
     return rv
 
+
 def _decode_dict(data):
     rv = {}
     for key, value in data.items():
@@ -95,6 +97,7 @@ def _decode_dict(data):
             value = _decode_dict(value)
         rv[key] = value
     return rv
+
 
 # numpy-dependent routines
 if js9Globals['numpy']:
@@ -191,6 +194,7 @@ if js9Globals['numpy']:
             raise ValueError('unknown retrieveAs type for GetImageData()')
         return arr
 
+
 class JS9(object):
     """
     The JS9 class supports communication with an instance of JS9 in a web
@@ -244,9 +248,9 @@ class JS9(object):
         # open socket.io connection, if necessary
         if js9Globals['transport'] == 'socketio':
             try:
-                a = host.rsplit(':',1)
+                a = host.rsplit(':', 1)
                 self.sockio = SocketIO(a[0], int(a[1]))
-            except:
+            except Exception as e:
                 js9Globals['transport'] = 'html'
         self._alive()
 
@@ -306,7 +310,9 @@ class JS9(object):
             self.__dict__['sockioResult'] = ''
             self.sockio.emit('msg', obj, self.sockioCB)
             self.sockio.wait_for_callbacks(seconds=js9Globals['wait'])
-            if self.__dict__['sockioResult'] and isinstance(self.__dict__['sockioResult'], str) and 'ERROR:' in self.__dict__['sockioResult']:
+            if self.__dict__['sockioResult'] and \
+               isinstance(self.__dict__['sockioResult'], str) and \
+               'ERROR:' in self.__dict__['sockioResult']:
                 raise ValueError(self.__dict__['sockioResult'])
             return self.__dict__['sockioResult']
 
@@ -560,12 +566,14 @@ class JS9(object):
 
         To override default image parameters, pass the image opts argument:
 
-          >>> j.LoadProxy('http://hea-www.cfa.harvard.edu/~eric/coma.fits', {'scale':'linear', 'colormap':'sls'})
+          >>> j.LoadProxy('http://hea-www.cfa.harvard.edu/~eric/coma.fits',
+                          {'scale':'linear', 'colormap':'sls'})
 
         If an onload callback function is specified in opts, it will be called
         after the image is loaded:
 
-          >>> j.LoadProxy('http://hea-www.cfa.harvard.edu/~eric/coma.fits', {'scale': 'linear', 'onload': func})
+          >>> j.LoadProxy('http://hea-www.cfa.harvard.edu/~eric/coma.fits',
+                          {'scale': 'linear', 'onload': func})
         """
         return self.send({'cmd': 'LoadProxy', 'args': args})
 
@@ -954,7 +962,7 @@ class JS9(object):
 
           >>> JS9.BlendImage()   # returns a blend object for the current image
           >>> JS9.BlendImage(true||false) # turns on/off blending of
-          >>> JS9.BlendImage(blend, opacity) # set or modify the blend mode or opacity
+          >>> JS9.BlendImage(blend, opacity) # set/modify blend mode or opacity
         """
         return self.send({'cmd': 'BlendImage', 'args': args})
 
@@ -1060,7 +1068,9 @@ class JS9(object):
         the colormap are divided evenly between these 3-D triplets.
         For example, the i8 colormap is defined as:
 
-          >>> JS9.AddColormap("i8", [[0,0,0], [0,1,0], [0,0,1], [0,1,1], [1,0,0], [1,1,0], [1,0,1], [1,1,1]]))
+          >>> JS9.AddColormap("i8",
+                              [[0,0,0], [0,1,0], [0,0,1], [0,1,1], [1,0,0],
+                              [1,1,0], [1,0,1], [1,1,1]]))
 
         Here, the colormap is divided into 8 sections having the
         following colors: black, green, blue, cyan (green + blue),
@@ -1077,9 +1087,12 @@ class JS9(object):
         is the y-intensity of the color.  Colors are interpolated
         between the vertices.  For example, consider the following:
 
-          >>> JS9.AddColormap("red",[[0,0],[1,1]], [[0,0], [0,0]], [[0,0],[0,0]])
-          >>> JS9.AddColormap("blue",[[0,0],[0,0]], [[0,0], [0,0]], [[0,0],[1,1]])
-          >>> JS9.AddColormap("purple", [[0,0],[1,1]], [[0,0], [0,0]],[[0,0],[1,1]])
+          >>> JS9.AddColormap("red",
+                              [[0,0],[1,1]], [[0,0], [0,0]], [[0,0],[0,0]])
+          >>> JS9.AddColormap("blue",
+                              [[0,0],[0,0]], [[0,0], [0,0]], [[0,0],[1,1]])
+          >>> JS9.AddColormap("purple",
+                              [[0,0],[1,1]], [[0,0], [0,0]],[[0,0],[1,1]])
 
         In the red (blue) colormap, the red (blue) array contains two
         vertices, whose color ranges from no intensity (0) to full
@@ -1090,7 +1103,11 @@ class JS9(object):
         For a more complicated example, consider the a colormap, which is
         defined as:
 
-          >>> JS9.AddColormap("a", [[0,0], [0.25,0], [0.5,1], [1,1]], [[0,0], [0.25,1], [0.5,0], [0.77,0], [1,1]], [[0,0], [0.125,0], [0.5, 1], [0.64,0.5], [0.77, 0], [1,0]])
+          >>> JS9.AddColormap("a",
+                              [[0,0], [0.25,0], [0.5,1], [1,1]],
+                              [[0,0], [0.25,1], [0.5,0], [0.77,0], [1,1]],
+                              [[0,0], [0.125,0], [0.5, 1], [0.64,0.5],
+                               [0.77, 0], [1,0]])
 
         Here we see that red is absent for the first quarter of the
         colormap, then gradually increases to full intensity by the
@@ -1109,10 +1126,13 @@ class JS9(object):
         containing the colormap definition:
 
         # RGB color triplets for the I8 colormap in a "colors" property
-        {"name":"i8","colors":[[0,0,0],[0,1,0],[0,0,1],[0,1,1],[1,0,0],[1,1,0],[1,0,1],[1,1,1]]}
+        {"name":"i8",
+          "colors":[[0,0,0],[0,1,0],[0,0,1],[0,1,1],
+                    [1,0,0],[1,1,0],[1,0,1],[1,1,1]]}
 
-        # all 3 vertex arrays for the purple colormap in one "vertices" property
-        {"name":"purple","vertices":[[[0,0],[1,1]],[[0,0],[0,0]],[[0,0],[1,1]]]}
+        # all 3 vertex arrays for purple colormap in one "vertices" property
+        {"name":"purple",
+         "vertices":[[[0,0],[1,1]],[[0,0],[0,0]],[[0,0],[1,1]]]}
 
         Finally, note that JS9.AddColormap() adds its new colormap to
         all JS9 displays on the given page.
@@ -1587,7 +1607,8 @@ class JS9(object):
 
         where:
 
-        - op: image operation: "add", "sub", "mul", "div", "min", "max", "reset"
+        - op: image operation: "add", "sub", "mul", "div",
+                               "min", "max", "reset"
         - arg1: image handle, image id or numeric value
         - opts: options object
 
@@ -1721,7 +1742,7 @@ class JS9(object):
         - greyscaleAvg():convert to greyscale using averaging:
         (r+g+b) / 3
 
-        - brighten(val): add const value to each pixel to change the brightness:
+        - brighten(val): add const val to each pixel to change the brightness:
         [r + val, g + val, b + val]
 
         - noise(v1, v2): add random noise:
@@ -1836,7 +1857,7 @@ class JS9(object):
         The wcsim argument is an image id, image filename, or image
         object pointing to the WCS image.
 
-        The opts object can contain the following reproject-specific properties:
+        The opts object can contain the following reproject-specific props:
 
         - rawid: the id of the raw data layer to create (default: "reproject")
         - cmdswitches: a string containing mProjectPP command line switches
@@ -2000,7 +2021,7 @@ class JS9(object):
         mouse and touch events. Ordinarily, a shape layer becomes the active
         layer when it is first created and shapes are added to it. Thus, the
         first time you create a region, the regions layer becomes active. If
-        you then load a catalog into a catalog layer, that layer becomes active.
+        you then load a catalog into a layer, that layer becomes active.
 
         If no arguments are supplied, the routine returns the currently active
         layer. Specify the name of a layer as the first argument to make it
@@ -2287,8 +2308,8 @@ class JS9(object):
         - which: which regions to save (default is "all")
             - layer: which layer save (default is "regions")
 
-        Save the current regions for the displayed image as JS9 regions file. If
-        filename is not specified, the file will be saved as "js9.reg".
+        Save the current regions for the displayed image as JS9 regions file.
+        If filename is not specified, the file will be saved as "js9.reg".
 
             Don't forget that the file is saved by the browser, in whatever
             location you have set up for downloads.
@@ -2337,7 +2358,7 @@ class JS9(object):
             - table: string or blob containing the catalog table
             - opts: catalog options
 
-            Astronomical catalogs are a special type of JS9 shape layer, in which
+            Astronomical catalogs are a special type of shape layer, in which
             the shapes have been generated from a tab-delimited text file of
             columns, including two columns that contain RA and Dec values. An
             astronomical catalog can have a pre-amble of comments, which, by
@@ -2357,8 +2378,8 @@ class JS9(object):
             data described above (the result of reading a file, performing
             a URL get, etc.)
 
-            The third argument is an optional object used to specify parameters,
-            including:
+            The third argument is an optional object used to specify
+            parameters, including:
 
             - xcol: name of the RA column in the table
             - ycol: name of the Dec column in the table
@@ -2402,8 +2423,8 @@ class JS9(object):
 
             If the which argument is not specified, the catalog associated
             with the current active layer will be saved. In either case, the
-            layer to save must actually be a catalog created from a tab-delimited
-            file (or URL) of catalog objects (not, for example, the regions layer).
+            layer to save must be a catalog created from a tab-delimited
+            file (or URL) of catalog objects (e.g., not the regions layer).
         """
         return self.send({'cmd': 'SaveCatalog', 'args': args})
 

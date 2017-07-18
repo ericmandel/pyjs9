@@ -780,6 +780,88 @@ class JS9(object):
         """
         return self.send({'cmd': 'DisplayExtension', 'args': args})
 
+    def DisplaySection(self, *args):
+        """
+        Extract and display a section of a FITS file
+
+        call:
+
+        JS9.DisplaySection(opts)
+
+        where:
+
+        - opts: object containing options
+
+        This routine allows you to extract and display a section of FITS file.
+        The opts object contains properties specifying how to generate and
+        display the section:
+
+         - xcen: x center of the section in file (physical) coords (required)
+         - ycen: y center of the section in file (physical) coords (required)
+         - xdim: x dimension of section to extract before binning
+         - ydim: y dimension of section to extract before binning
+         - bin:  bin factor to apply after extracting the section
+         - filter: for tables, row/event filter to apply when extracting a
+            section
+         - separate: if true, display as a separate image (default is to update
+            the current image)
+
+        All properties are optional: by default, the routine will extract a bin
+        1 image from the center of the file.
+
+        For example, if an image has dimensions 4096 x 4096, then specifying:
+
+         - center: 1024, 1024
+         - dimensions: 1024, 1024
+         - bin: 2
+
+        will bin the upper left 1024 x 1024 section of the image by 2 to
+        produce a 512 x 512 image.  Note that 0,0 can be used to specify the
+        file center.
+
+        Table filtering allows you  to select rows from an FITS binary table
+        (e.g., an X-ray event list) by checking each row against an expression
+        involving the columns in the table. When a table is filtered, only
+        valid rows satisfying these expressions are used to make the image.
+
+        A filter expression consists of an arithmetic or logical operation
+        involving one or more column values from a table. Columns can be
+        compared to other columns or to numeric constants. Standard JavaScript
+        math functions can be applied to columns. JavaScript (or C) semantics
+        are used when constructing expressions, with the usual precedence and
+        associativity rules holding sway:
+
+          Operator                                Associativity
+          --------                                -------------
+          ()                                      left to right
+          !  (bitwise not) - (unary minus)        right to left
+          *  /                                    left to right
+          +  -                                    left to right
+          < <= > >=                               left to right
+          == !=                                   left to right
+          &  (bitwise and)                        left to right
+          ^  (bitwise exclusive or)               left to right
+          |  (bitwise inclusive or)               left to right
+          && (logical and)                        left to right
+          || (logical or)                         left to right
+          =                                       right to left
+
+        For example, if energy and pha are columns in a table, then the
+        following are valid expressions:
+
+          pha > 1
+          energy == pha
+          pha > 1 && energy <= 2
+          max(pha,energy) >= 2.5
+
+        NB: JS9 uses cfitsio by default (you can, but should not, use the
+        deprecated fitsy.js), and therefore follows cfitsio filtering
+        conventions, which are documented in:
+
+        https://heasarc.gsfc.nasa.gov/docs/software/fitsio/c/c_user/node97.html
+        """
+        return self.send({'cmd': 'DisplaySection', 'args': args})
+
     def DisplaySlice(self, *args):
         """
         Display a slice of a FITS data cube
@@ -878,6 +960,7 @@ class JS9(object):
         to blend a stack of images together by mixing the RGB colors. The W3C
         has defined a number of composite and blending modes which have been
         implemented by Firefox, Chrome, and Safari (what about IE?):
+
         - normal
         - multiply
         - screen

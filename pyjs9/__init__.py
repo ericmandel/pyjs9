@@ -2647,6 +2647,42 @@ class JS9(object):
         """
         return self.send({'cmd': 'ResizeDisplay', 'args': args})
 
+    def GatherDisplay(self, *args):
+        """
+        Gather other images to this JS9 Display
+
+        call:
+
+        GatherDisplay()
+
+        This routine move all images in other displays to this display.
+        """
+        return self.send({'cmd': 'GatherDisplay', 'args': args})
+
+    def SeparateDisplay(self, *args):
+        """
+        Separate images in this JS9 Display into new displays.
+
+        call:
+
+        SeparateDisplay()
+
+        This routine moves each image in this display to a new display.
+        """
+        return self.send({'cmd': 'SeparateDisplay', 'args': args})
+
+    def CenterDisplay(self, *args):
+        """
+        Scroll the JS9 display to the center of the viewport
+
+        call:
+
+        CenterDisplay()
+
+        This routine scrolls this display to the center of the viewport.
+        """
+        return self.send({'cmd': 'CenterDisplay', 'args': args})
+
     def DisplayHelp(self, *args):
         """
         Display help in a light window

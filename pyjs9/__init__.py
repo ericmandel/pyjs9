@@ -20,7 +20,7 @@ pyjs9.py connects python and js9 via the js9Helper.js back-end server
 """
 
 # pyjs9 version
-__version__ = '1.4'
+__version__ = '2.0'
 
 # try to be a little bit neat with global parameters
 js9Globals = {}
@@ -1222,6 +1222,73 @@ class JS9(object):
         """
         return self.send({'cmd': 'AddColormap', 'args': args})
 
+    def LoadColormap(self, *args):
+        """
+        Load a colormap file into JS9
+
+        LoadColormap(filename)
+
+        where:
+
+        - filename: input file name or URL
+
+        Load the specified colormap file into the web page. The filename,
+        which must be specified, can be a local file (with absolute path or a
+        path relative to the displayed web page) or a URL. It should contain a
+        JSON representation of a colormap, either in RGB color format or in
+        vertex format (see AddColormap() above):
+
+        >>> # RGB color format
+        >>> {
+        >>>     "name": "purplish",
+        >>>     "colors": [
+        >>>        [0.196, 0.196, 0.196],
+        >>>        [0.475, 0, 0.608],
+        >>>        [0, 0, 0.785],
+        >>>        [0.373, 0.655, 0.925],
+        >>>        [0, 0.596, 0],
+        >>>        [0, 0.965, 0],
+        >>>        [1, 1, 0],
+        >>>        [1, 0.694, 0],
+        >>>        [1, 0, 0]
+        >>>     ]
+        >>> }
+        >>> # vertex format
+        >>> {
+        >>>     "name": "aips0",
+        >>>     "vertices": [
+        >>>      [
+        >>>        [0.203, 0],
+        >>>        [0.236, 0.245],
+        >>>        [0.282, 0.5],
+        >>>        [0.342, 0.706],
+        >>>        [0.411, 0.882],
+        >>>        [0.497, 1]
+        >>>      ],
+        >>>      [
+        >>>        [0.394, 0],
+        >>>        [0.411, 0.196],
+        >>>        [0.464, 0.48],
+        >>>        [0.526, 0.696],
+        >>>        [0.593, 0.882],
+        >>>        [0.673, 1],
+        >>>        [0.94, 1],
+        >>>        [0.94, 0]
+        >>>      ],
+        >>>      [
+        >>>        [0.091, 0],
+        >>>        [0.091, 0.373],
+        >>>        [0.262, 1],
+        >>>        [0.94, 1],
+        >>>        [0.94, 0]
+        >>>      ] ]
+        >>>   }
+
+        As with AddColormap(), the new colormap will be available
+        in all displays.
+        """
+        return self.send({'cmd': 'LoadColormap', 'args': args})
+
     def GetRGBMode(self, *args):
         """
         Get RGB mode information
@@ -1391,6 +1458,70 @@ class JS9(object):
         two (smin, max) or three (scale, smin, smax) arguments.
         """
         return self.send({'cmd': 'SetScale', 'args': args})
+
+    def GetParam(self, *args):
+        """
+        Get an image parameter value
+
+        val = GetParam(param)
+
+        where:
+
+        - param: name of the parameter
+
+        returns:
+
+        - val: value of the parameter
+
+        Return the value of an image parameter. The available parameters are
+        listed below in the SetParam() section.
+        """
+        return self.send({'cmd': 'GetParam', 'args': args})
+
+    def SetParam(self, *args):
+        """
+        Set an image parameter value
+
+        ovalue = SetParam(param, value)
+
+        where:
+
+        - param: name of the parameter
+        - val: new value of the parameter
+
+        returns:
+
+        - ovalue: the previous value of the parameter
+
+        A number of miscellaneous image parameters are copied from the
+        JS9.imageOpts object to each image when it is first loaded. You can
+        use the SetParam() routine to modify these values subsequently.
+        The available parameters and their current default values are listed
+        below:
+
+        - exp: 1000, default exp value for scaling
+        - listonchange: false, list regions after a region change?
+        - opacity: 1.0, image display opacity, between 0 and 1
+        - nancolor: "#000000", 6-digit #hex color for NaN values
+        - valpos: true, display value/position?
+        - wcsalign: true, align image using wcs after reproj?
+        - xeqonchange: true, xeq an onchange callback after a region change?
+        - zscalecontrast: 0.25, default zscale value from ds9
+        - zscalesamples: 600,	default zscale value from ds9
+        - zscaleline: 120, default zscale value from ds9
+
+        The routine returns the previous value of the parameter, which can
+        be useful when temporarily turning off a function. For example:
+
+        >>> oval = SetParam("xeqonchange", false);
+        >>> .... processing ...
+        >>> SetParam("xeqonchange", oval);
+
+        will temporarily disable execution of the previously defined regions
+        onload callback, resetting it to the old value after processing
+        is complete.
+        """
+        return self.send({'cmd': 'SetParam', 'args': args})
 
     def GetValPos(self, *args):
         """
@@ -2585,6 +2716,125 @@ class JS9(object):
         """
         return self.send({'cmd': 'SaveJPEG', 'args': args})
 
+    def GetToolbar(self, *args):
+        """
+        Get toolbar values from the Toolbar plugin
+
+        val = GetToolbar(type)
+
+        where:
+
+        - type: type of information to retrieve
+
+        returns:
+
+        - val: array of tool objects (or an argument-dependent return)
+
+        The GetToolbar() routine returns global information about the
+        Toolbar plugin. If the first argument is "showTooltips", the returned
+        value specifies whether tooltips are currently displayed. Otherwise
+        an array of tool objects is returned, one for each of the defined
+        tools in the toolbar.
+        """
+        return self.send({'cmd': 'GetToolbar', 'args': args})
+
+    def SetToolbar(self, *args):
+        """
+        Set toolbar values for the Toolbar plugin
+
+        SetToolbar(arg1, arg2)
+
+        where:
+
+        - arg1: a type-dependent id or value to set
+        - arg2: a type-dependent value to set
+
+        The SetToolbar() routine sets global information about the Toolbar
+        plugin. The following values can be specified as the first argument:
+
+        - init: the text "init" triggers a re-initialization of all
+        display Toolbar plugins, which is useful if you have changed
+        the JS9.globalOpts.toolBar array to specify a new set of
+        top-level tools.
+        - showTooltips: the text "showTooltips" uses the value of the
+        boolean arg2 to specify whether tooltips are displayed as the mouse
+        hovers over a tool.
+        - [text]: other text is assumed to be a JSON-formatted text
+        containing either a new tool to add to the toolbar, or an array of
+        tools.
+        - [object]: an object is assumed to be new tool to add to the toolbar
+        - [array]: an array is assumed to be an array of new tools to add to
+        the toolbar
+
+        New tools can be added to the toolbar at any time using this routine.
+        The text properties associated with a tool object are:
+
+        - name: name of the tool
+        - tip: a tooltip to display when the mouse hovers over the tool
+        - image: url (relative to the install directory) containing a PNG
+        image file to display as the tool icon
+        - cmd: name of the JS9 public routine to execute when the tool is
+        clicked
+        - args: array of arguments to pass to the JS9 public routine
+
+        Only the name and cmd properties are required. If no image is
+        specified, a button labeled by the name value will be used.
+
+        Examples of tool objects:
+
+        >>> {
+        >>>   "name": "linear",
+        >>>   "tip": "linear scale",
+        >>>   "image": "images/toolbar/dax_images/lin.png",
+        >>>   "cmd": "SetScale",
+        >>>   "args": ["linear"]
+        >>> },
+        >>> {
+        >>>   "name": "histeq",
+        >>>   "tip": "histogram equalization",
+        >>>   "cmd": "SetScale",
+        >>>   "args": ["histeq"]
+        >>> },
+        >>> {
+        >>>   "name": "annulus",
+        >>>   "tip": "annulus region",
+        >>>   "image": "images/toolbar/dax_images/annulus.png",
+        >>>   "cmd": "AddRegions",
+        >>>   "args": ["annulus"]
+        >>> },
+        >>> {
+        >>>   "name": "remove",
+        >>>   "tip": "remove selected region",
+        >>>   "image": "images/toolbar/dax_images/erase.png",
+        >>>   "cmd": "RemoveRegions",
+        >>>   "args": ["selected"]
+        >>> },
+        >>> {
+        >>>   "name": "zoom1",
+        >>>   "tip": "zoom 1",
+        >>>   "image": "images/toolbar/dax_images/mag_one.png",
+        >>>   "cmd": "SetZoom",
+        >>>   "args": [1]
+        >>> },
+        >>> {
+        >>>   "name": "magnifier",
+        >>>   "tip": "toggle magnifier display",
+        >>>   "image": "images/toolbar/dax_images/mag.png",
+        >>>   "cmd": "DisplayPlugin",
+        >>>   "args": ["JS9Magnifier"]
+        >>> }
+
+        Each time a tool is added to the list of available tools, the active
+        Toolbar plugins will be re-initialized to display that tool. By
+        default, the new tool not be added to the top-level list: you must
+        also edit the JS9.globalOpts.toolBar array to add the name of the
+        tool. If this is done after you add the tool, remember to re-initialize
+        active toolbars by calling:
+
+        >>>  SetToolbar("init");
+        """
+        return self.send({'cmd': 'SetToolbar', 'args': args})
+
     def GetFITSHeader(self, *args):
         """
         Get FITS header as a string
@@ -2701,6 +2951,61 @@ class JS9(object):
         because).
         """
         return self.send({'cmd': 'DisplayHelp', 'args': args})
+
+    def LightWindow(self, *args):
+        """
+        Display content in a light window
+
+        LightWindow(id, type, content, title, opts)
+
+        where:
+
+        - id: unique id for light window div(default: "lightWindow" + uniqueID)
+        - type: content type: "inline", "div", "ajax", "iframe" (def: "inline")
+        - content: content of the light window (default: none)
+        - title: title (default: "JS9 light window")
+        - opts: configuration string
+          (default: "width=830px,height=400px,center=1,resize=1,scrolling=1")
+
+        Display arbitrary content inside a light window. There are any number
+        of light window routines available on the Net. JS9 uses light window
+        routines developed by Dynamic Drive (http://www.dynamicdrive.com).
+        Their extensive documentation can be found
+        <a href="http://www.dynamicdrive.com/dynamicindex8/dhtmlwindow/">
+        here</a>.
+
+        The content shown inside the window depends on the content parameter:
+
+        -  iframe: the URL of the page to display (ie: "http://www.google.com")
+        - inline: the HTML to display (back-slashing any special JavaScript
+        characters, such as apostrophes)
+        - ajax: the relative path to the external page to display, relative to
+        the current page (ie: "../external.htm")
+        - div: define a DIV element on the page with a unique ID attribute
+        (probably hidden using style="display:none") and the use the DIV's id
+        as the content value
+
+        JS9 typically uses the inline option. Note that web sites often
+        do not allow themselves to be embedded in an iframe, so this is an
+        unreliable option.
+
+        The opts parameter specifies options for the light window, such
+        as its size.  This parameter consists of a string with comma-separated
+        keywords, e.g.:
+
+        >>> "width=830px,height=400px,center=1,resize=1,scrolling=1"
+
+        The opts keywords, defined in the Dynamic Drive documentation, are:
+        width, height, left, top, center, resize, and scrolling.  The
+        JS9.lightOpts.dhtml object defines oft-used lightwin configurations,
+        and the JS9.lightOpts.dhtml.textWin property is used as the
+        default for this call. You can utilize these properties in your own
+        call to LightWindow() or make up your own configuration string.
+
+        As an extension to the Dynamic Drive light window support, JS9 adds
+        the ability to double-click the title bar in order to close the window.
+        """
+        return self.send({'cmd': 'LightWindow', 'args': args})
 
     def analysis(self, *args):
         """

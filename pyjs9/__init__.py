@@ -2911,13 +2911,30 @@ class JS9(object):
 
     def SeparateDisplay(self, *args):
         """
-        Separate images in this JS9 Display into new displays.
+        Separate images in this JS9 Display into new displays
 
         call:
 
-        SeparateDisplay()
+        SeparateDisplay(dname, opts)
+
+        where:
+
+        - dname: name of JS9 display from which the images will be separated
+        - opts: optional object for layout properties
 
         This routine moves each image in this display to a new display.
+        You can supply an opts object containing the layout properties:
+
+        - layout: can be "horizontal", "vertical", "auto" (default: "auto")
+        - leftMargin: margin in pixels between horizontally separated images
+        - topMargin: margin in pixels between vertically separated images
+
+        The "horizontal" layout will generate a single row of images. The
+        "vertical" layout will generate a single column of images.  The "auto"
+        option will layout the images in one or more rows. Each row will
+        contain one or more images such that at least one-half of the
+        right-most image is visible in the browser without the need for
+        horizontal scrolling.
         """
         return self.send({'cmd': 'SeparateDisplay', 'args': args})
 
@@ -2929,9 +2946,29 @@ class JS9(object):
 
         CenterDisplay()
 
+        where:
+
+        - dname: name of JS9 display to center
+
         This routine scrolls this display to the center of the viewport.
         """
         return self.send({'cmd': 'CenterDisplay', 'args': args})
+
+    def CloseDisplay(self, *args):
+        """
+        Close all images in a display
+
+        call:
+
+        CloseDisplay(dname)
+
+        where:
+
+        - dname: name of JS9 display whose images will be closed
+
+        This routine closes all images in the specified display.
+        """
+        return self.send({'cmd': 'CloseDisplay', 'args': args})
 
     def DisplayHelp(self, *args):
         """

@@ -2835,6 +2835,22 @@ class JS9(object):
         """
         return self.send({'cmd': 'SetToolbar', 'args': args})
 
+    def UploadFITSFile(self, *args):
+        """
+        Upload the currently displayed FITS file to a proxy server
+
+        call:
+
+        JS9.UploadFITSFile()
+
+        Upload the currently displayed FITS file to the proxy server, so
+        back-end analysis can be performed. This routine requires that a
+        Node.js-based JS9 helper is running and that the helper has enabled
+        the loadProxy property and set up a workDir directory in which to
+        store the FITS file.
+        """
+        return self.send({'cmd': 'UploadFITSFile', 'args': args})
+
     def GetFITSHeader(self, *args):
         """
         Get FITS header as a string

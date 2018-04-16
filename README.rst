@@ -16,13 +16,13 @@ JS9 brings image display right into your browser::
 - print images
 - much more ...
 
-See: http://js9.si.edu for more information about JS9.
+See: https://js9.si.edu for more information about JS9.
 
 pyjs9.py connects Python and JS9 via the js9Helper.js back-end server::
 
 - The JS9 class constructor connects to a single JS9 instance in a Web page.
 - The JS9 object supports the JS9 Public API and a shorter command-line syntax.
-- See: http://js9.si.edu/js9/help/publicapi.html for info about the public api
+- See: https://js9.si.edu/js9/help/publicapi.html for info about the public api
 - Send/retrieve numpy arrays and astropy (or pyfits) hdulists to/from JS9.
 
 Requirements: pyjs9 communicates with a JS9 back-end Node server
@@ -78,13 +78,13 @@ To run::
 	(1024, 1024)
 
 If you have internet connectivity, visit the JS9 Web page at
-http://js9.si.edu with your browser and::
+https://js9.si.edu with your browser and::
 
 	> python
         ... (startup messages) ...
 	>>> import pyjs9
 	>>>
-	>>> j = pyjs9.JS9('js9.si.edu')        # connect to JS9 Web site
+	>>> j = pyjs9.JS9('https://js9.si.edu')        # connect to JS9 Web site
 	>>>
 	>>> j.GetColormap()
 	{'bias': 0.5, 'colormap': 'grey', 'contrast': 1}

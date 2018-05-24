@@ -2882,6 +2882,74 @@ class JS9(object):
         """
         return self.send({'cmd': 'Print', 'args': args})
 
+    def CreateMosaic(self, *args):
+        """
+        Create a Mosaic Image
+
+        call:
+
+        CreateMosaic(which, opts)
+
+        where:
+
+        - which: which images to use in the mosaic
+        - opts: mosaic options
+
+        The JS9.CreateMosaic() creates a mosaic image from the specified
+        (previously-loaded) FITS images using the mProjectPP and mAdd programs
+        form the Montage software suite. These Montage programs have been
+        compiled into JS9 using Emscripten.
+
+        Because the browser environment is memory-limited, there are some
+        restrictions on generating mosaics in JS9. The FITS files must be
+        well-behaved, i.e. they must have WCS projections which can be
+        approximated by tangent-plane projections (TAN, SIN, ZEA, STG, ARC).
+        This precludes creating mosaics from images covering large portions of
+        the sky. For large sky areas, please use Montage itself on your desktop
+        to create a mosaic. A simplified js9mosaic script is included in
+        the JS9 distribution or, for more control, use the Montage programs
+        directly. Of course, in either case, you must install Montage.
+
+        The which parameter determine which images are used in the mosaic:
+
+        - "current" or null: the current image in this display
+        - "all": all images in this display
+        - im: the image id an image from any display
+        - [im1, im2, ...]: an array of image ids from any display
+
+        Use "current" (or null) if you have loaded a multi-extension
+        FITS mosaic into JS9. Use "all" if you have loaded several
+        FITS files into JS9 and want to create a mosaic.
+
+        In order to keep the size of the resulting mosaic within memory
+        limits, JS9 reduces the size of each image before adding them all
+        together The options parameter determines how the reduction is
+        performed:
+
+        - dim: size of mosaic (def: max of JS9.globalOpts.image.[xdim,ydim])
+        - reduce: image size reduction technique: "js9" (def) or "shrink"
+        - verbose: if true, processing output is sent to the javascript console
+
+        The "dim" parameter is a target size: the larger of the resulting
+        mosaic dimensions will be approximately this value, depending on how
+        Montage processes the images. The "reduce" technique either runs
+        internal JS9 image sectioning code (to produce smaller internal
+        images, each of which are reprojected and added together) or runs the
+        Montage mShrinkHdr code (which reprojects the full images into smaller
+        files). The former seems to be faster than the latter in most
+        cases. The "verbose" parameter will display output on the JavaScript
+        console to let you know that the CreateMosaic() call is running
+        properly.
+
+        The resulting mosaic will be loaded into the specified JS9 display as
+        a separate image. Because the mosaic is separate from the original
+        image(s), you can view each of the latter individually (or view each
+        image extension of a single image using the Extensions plugin).
+        Internal analysis can be performed on the mosaic but,
+        of course, no external analysis tasks will be available.
+        """
+        return self.send({'cmd': 'CreateMosaic', 'args': args})
+
     def ResizeDisplay(self, *args):
         """
         Change the width and height of the JS9 display

@@ -5,7 +5,7 @@ def readme():
         return f.read()
 
 setup(name='pyjs9',
-      version='1.4',
+      version='2.1',
       description='Python/JS9 connection, with numpy and astropy/fits support',
       long_description=readme(),
       author='Eric Mandel',
@@ -17,7 +17,7 @@ setup(name='pyjs9',
         'Topic :: Scientific/Engineering :: Astronomy',
       ],
       keywords='astronomy astrophysics image display',
-      url='http://js9.si.edu',
+      url='https://js9.si.edu',
       license='MIT',
       packages=['pyjs9'],
       install_requires=['six', 'requests'],

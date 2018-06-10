@@ -1789,6 +1789,125 @@ class JS9(object):
         """
         return self.send({'cmd': 'SetWCSSys', 'args': args})
 
+    def CountsInRegions(self, *args):
+        """
+        Get background-subtracted counts in regions
+
+        call:
+
+        CountsInRegions(sregion, bregion, opts)
+
+        where:
+
+        - sregion: source region ("$sregions" for displayed source regions)
+        - bregion: background region ("$bregions" for displayed bkgd regions)
+        - opts:  optional object or json string containing region parameters
+
+        The regcnts program (and its predecessor, funcnts) counts photons in
+        specified source regions and optionally, in specified background
+        regions. Displayed results include the bkgd-subtracted counts in each
+        region, as well as the error on the counts, the area in each region,
+        and the surface brightness (cnts/area**2) calculated for each region.
+        Regcnts for desktop use is available on GitHub at:
+        https://github.com/ericmandel/regions.
+
+        The regcnts program has been compiled into JS9 using Emscripten.
+        Using this routine, regcnts can be run on the FITS memory-based file
+        for the currently displayed image.  The first two arguments specify
+        the source region(s) and background region(s), respectively.
+        You can pass a standard region specifier as the source
+        or background region. If the string "$sregions" ("$bregions") is
+        specified, the source (background) regions are taken from the
+        currently displayed image.
+
+        In keeping with how desktop regcnts works, if no argument or null or a
+        null string is specified as the source region, the entire field is
+        used as the source region. If no argument or null or a null string is
+        explicitly specified as a background region, no regions are used for
+        the background.  In particular, if you pass only the source region
+        argument, or pass only the source region and opts arguments, no
+        background region is used. To recap:
+
+          >>> # use entire field, no background
+          >>> JS9.CountsInRegions([opts])
+          >>> JS9.CountsInRegions("field"||null||""[, opts])
+
+          >>> # use displayed source and displayed background
+          >>> JS9.CountsInRegions("$sregions", "$bregions"[, opts])
+
+          >>> # use displayed source, no background
+          >>> JS9.CountsInRegions("$sregions"[, opts])
+
+          >>> # use displayed source and specified background
+          >>> JS9.CountsInRegions("$sregions", bregions[, opts])
+
+          >>> # use specified source, no background
+          >>> JS9.CountsInRegions(sregions[, opts])
+
+          >>> # use specified source and specified background
+          >>> JS9.CountsInRegions(sregions, bregions[, opts])
+
+          >>> # use specified source and displayed background
+          >>> JS9.CountsInRegions(sregions, "$bregions"[, opts])
+
+          >>> # use entire field and specified background
+          >>> JS9.CountsInRegions("field"||null||"", bregions[, opts])
+
+          >>> # use entire field and displayed background
+          >>> JS9.CountsInRegions("field"||null||"", "$bregions"[, opts])
+
+        The third argument allows you to specify options to regcnts:
+
+        - cmdswitches: command line switches passed to regcnts
+        - dim: size of reduced image (def: max of JS9.globalOpts.image.[xy]dim)
+        - reduce: reduce image size? (def: true)
+        - lightwin: if not explicitly false, results displayed in light window
+
+        The command line switches that can be specified in cmdswitches are
+        detailed in https://js9.si.edu/regions/regcnts.html, the regcnts help
+        page.  Aside from switches which control important aspects of the
+        analysis, the "-j" switch (which returns the output in JSON format)
+        might be useful in the browser environment. Some examples:
+
+          >>> # return json, don't display results in a light window
+          >>> JS9.CountsInRegions({lightwin: false, cmdswitches: "-j"})
+
+          >>> # return json using maximum precision in output
+          >>> JS9.CountsInRegions({cmdswitches: "-j -G"})
+
+        The regcnts code is memory (and cpu) intensive. In the desktop
+        environment, this is not typically a problem, but the
+        memory-constrained browser environment can present a challenge for
+        large images and binary tables.  To avoid running out of memory (and
+        for large images, to speed up processing considerably), the
+        CountsInRegions() routine will bin the image to reduce its size,
+        unless the reduce option is explicitly set to false. The binned
+        image size can be specified by the dim option, defaulting to
+        the global value of the image dimension options. When a file is binned
+        in this manner, the returned resolution value (e.g., arcsec/pixel)
+        will reflect the applied binning. Note that the number of photons
+        found inside a binned and unbinned region differ slightly, due to the
+        difference in the pixel boundaries in the two cases.
+
+        The Counts in Regions option of the Analysis -> Client-side
+        Analysis menu runs regcnts on the source and background regions of
+        the currently displayed image. The results are displayed in a light
+        window.
+
+        Finally, note that the main JS9 web site at https://js9.si.edu
+        also offers regcnts as a server-based analysis program in the
+        Analysis menu. The displayed source and background regions are passed
+        to the server for processing. Because this version runs the desktop
+        program, it runs on the original file and does no binning to reduce
+        the image size (which, by the way, could lengthen the processing
+        time). But the server-side task also can be useful for
+        JS9 large file support, which involves displaying a small
+        representation file associated with a much larger parent
+        file stored on the server. In this case, you often want to run
+        the analysis on the larger (original) file.
+        """
+        return self.send({'cmd': 'CountsInRegions', 'args': args})
+
     def GaussBlurData(self, *args):
         """
         Gaussian blur of raw data

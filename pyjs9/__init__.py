@@ -3340,18 +3340,17 @@ class JS9(object):
         """
         return self.send({'cmd': 'pan', 'args': args})
 
-    def regions(self, *args):
+    def regcnts(self, *args):
         """
-        add region to current image or list all regions
+        get background-subtracted counts in regions
 
-        This is a commmand-style routine, easier to type than the full routine
-        at the expense of some flexibility:
-          - with no arguments, the getter is called to retrieve current values.
-          - with arguments, the setter is called to set current values.
+        This is a commmand-style routine, easier to type than the full routine:
+          - with no arguments, acts as if the Analysis menu option was chosen
+          - with arguments, acts like the full routine
 
-        Returned results are of type string.
+        With arguments, returned results are of type string.
         """
-        return self.send({'cmd': 'regions', 'args': args})
+        return self.send({'cmd': 'regcnts', 'args': args})
 
     def region(self, *args):
         """
@@ -3365,6 +3364,19 @@ class JS9(object):
         Returned results are of type string.
         """
         return self.send({'cmd': 'region', 'args': args})
+
+    def regions(self, *args):
+        """
+        add region to current image or list all regions
+
+        This is a commmand-style routine, easier to type than the full routine
+        at the expense of some flexibility:
+          - with no arguments, the getter is called to retrieve current values.
+          - with arguments, the setter is called to set current values.
+
+        Returned results are of type string.
+        """
+        return self.send({'cmd': 'regions', 'args': args})
 
     def resize(self, *args):
         """

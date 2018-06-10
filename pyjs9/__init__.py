@@ -1861,7 +1861,7 @@ class JS9(object):
         - cmdswitches: command line switches passed to regcnts
         - dim: size of reduced image (def: max of JS9.globalOpts.image.[xy]dim)
         - reduce: reduce image size? (def: true)
-        - lightwin: if not explicitly false, results displayed in light window
+        - lightwin: if true, results displayed in light window
 
         The command line switches that can be specified in cmdswitches are
         detailed in https://js9.si.edu/regions/regcnts.html, the regcnts help
@@ -1869,11 +1869,13 @@ class JS9(object):
         analysis, the "-j" switch (which returns the output in JSON format)
         might be useful in the browser environment. Some examples:
 
-          >>> # return json, don't display results in a light window
-          >>> JS9.CountsInRegions({lightwin: false, cmdswitches: "-j"})
+          >>> # display results in a light window
+          >>> JS9.CountsInRegions({lightwin: true})
 
           >>> # return json using maximum precision in output
           >>> JS9.CountsInRegions({cmdswitches: "-j -G"})
+
+        Results are also returned as a text string.
 
         The regcnts code is memory (and cpu) intensive. In the desktop
         environment, this is not typically a problem, but the

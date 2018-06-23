@@ -1789,6 +1789,72 @@ class JS9(object):
         """
         return self.send({'cmd': 'SetWCSSys', 'args': args})
 
+    def DisplayCoordGrid(self, *args):
+        """
+        Display a WCS-based coordinate grid
+
+        call:
+
+        DisplayCoordGrid(mode, opts)
+
+        where:
+
+        - mode: true (display) or false (hide)
+        - opts: optional object or json string containing grid parameters
+
+        A coordinate grid displays lines of constant RA and constant Dec, with
+        the points of intersection labeled by their RA and Dec values. The
+        labels are in sexagesimal notation if the WCS units are sexagesimal,
+        otherwise they are in degrees. When using sexagesimal notation, labels
+        will be shortened if possible, e.g., if the RA hours are the same in
+        two successive labels but the minutes are different, only the minutes
+        are shown in the second label.
+
+        If no arguments are supplied, the routine returns true if the
+        coordinate grid is currently being displayed, false otherwise. A
+        boolean first argument specifies whether to display the coordinate
+        grid or not.
+
+        The optional second argument is an opts object (or a json-formatted
+        string) containing properties to override the default JS9.Grid.opts
+        properties. These properties include:
+
+        - raLines: approx. number of RA grid lines
+        - decLines: approx. number of Dec grid lines
+        - stride: fineness of grid lines
+        - margin: edge margin for displaying a line
+        - lineColor: color of grid lines
+        - strokeWidth: grid stroke width
+        - labelColor: color of text labels
+        - labelFontFamily: label font
+        - labelFontSize: label font size
+        - labelRAOffx: x offset of RA labels
+        - labelRAOffy: y offset of RA labels
+        - labelDecOffx: x offset of Dec labels
+        - labelDecOffy: y offset of Dec labels
+        - reduceDims: reduce lines of smaller image dim?
+        - cover: grid lines cover: display or image
+
+        The four label[RA,Dec]Off[x,y] properties allow you to move the label
+        with respect to the grid lines. The reduceDims property will reduce
+        the raLines and decLines properties by the ratio of image
+        dimensions if one dimension is smaller than the other. This can
+        prevent crowding in the smaller dimension.  The cover property
+        is (more or less) internal: it determines whether the grid is drawn
+        over the entire image or just the displayed part of the image. At the
+        moment, drawing lines over the displayed part of the image seems to be
+        sufficient.
+
+        Note that you can specify global site-wide values for all these
+        parameters (overriding the JS9.Grid.opts defaults) by supplying them
+        in a grid object within the globalOpts object in the js9prefs.js file.
+
+        Example: display a coordinate grid, specifying the line color:
+
+          >>> JS9.DisplayCoordGrid(true, {lineColor: "pink"});
+        """
+        return self.send({'cmd': 'DisplayCoordGrid', 'args': args})
+
     def CountsInRegions(self, *args):
         """
         Get background-subtracted counts in regions

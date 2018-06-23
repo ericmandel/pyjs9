@@ -1825,6 +1825,8 @@ class JS9(object):
         - margin: edge margin for displaying a line
         - lineColor: color of grid lines
         - strokeWidth: grid stroke width
+        - raAngle: rotation for RA label
+        - decAngle: rotation for Dec label
         - labelColor: color of text labels
         - labelFontFamily: label font
         - labelFontSize: label font size

@@ -1832,9 +1832,10 @@ class JS9(object):
         - labelRAOffy: y offset of RA labels
         - labelDecOffx: x offset of Dec labels
         - labelDecOffy: y offset of Dec labels
+        - degPrec: precision for degree labels
+        - sexaPrec: precision for sexagesimal labels
         - reduceDims: reduce lines of smaller image dim?
         - cover: grid lines cover: display or image
-
         The four label[RA,Dec]Off[x,y] properties allow you to move the label
         with respect to the grid lines. The reduceDims property will reduce
         the raLines and decLines properties by the ratio of image

@@ -1839,18 +1839,36 @@ class JS9(object):
         - reduceDims: reduce lines of smaller image dim?
         - cover: grid lines cover: display or image
 
-        The raAngle and decAngle properties allow you to rotate the labels with
-        respect to the grid lines.  The four label[RA,Dec]Off[x,y] properties
-        allow you to move the label with respect to the grid lines. These six
-        properties can be useful in cases where JS9's simple label placement
-        algorithm is not sufficient. The reduceDims property will reduce
-        the raLines and decLines properties by the ratio of image
-        dimensions if one dimension is smaller than the other. This can
-        prevent crowding in the smaller dimension.  The cover property
-        is (more or less) internal: it determines whether the grid is drawn
-        over the entire image or just the displayed part of the image. At the
-        moment, drawing lines over the displayed part of the image seems to be
-        sufficient.
+        The strokeWidth property determines the width of the grid
+        lines. It also serves as a reminder that you can pass other
+        standard shape properties in the opts object.
+
+        JS9's label placement algorithm puts labels close to the
+        intersection of RA and Dec lines. A number of properties can be
+        useful in cases where this simple algorithm is not sufficient:
+        the raAngle and decAngle properties allow you to rotate the
+        labels with respect to the grid lines. The four
+        label[RA,Dec]Off[x,y] properties allow you to move the label with
+        respect to the grid lines.  The raSkip and decSkip properties
+        allow you to skip labelling the first available lines within the
+        display. It can be useful, for example, on a rotated image, when
+        the labels are placed in a corner.
+
+        The degPrec and sexaPrec properties specify the precision for
+        degree values and segagesimal values, respectively. Higher
+        precision will use more digits and take more space along each line.
+
+        A number of properties are (more or less) internal but might be
+        of use: the reduceDims property will reduce the raLines and
+        decLines properties by the ratio of image dimensions if one
+        dimension is smaller than the other. This can prevent crowding in
+        the smaller dimension.  The stride property specifies the length
+        of each line segment that together make up a grid line. A smaller
+        stride might make the grid lines smoother in some cases, at the
+        price of more processing time.  The cover property determines
+        whether the grid is drawn over the entire image or just the
+        displayed part of the image. At the moment, drawing lines over
+        the displayed part of the image seems to be sufficient.
 
         Note that you can specify global site-wide values for all these
         parameters (overriding the JS9.Grid.opts defaults) by supplying them

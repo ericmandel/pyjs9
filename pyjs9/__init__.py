@@ -1838,8 +1838,12 @@ class JS9(object):
         - sexaPrec: precision for sexagesimal labels
         - reduceDims: reduce lines of smaller image dim?
         - cover: grid lines cover: display or image
-        The four label[RA,Dec]Off[x,y] properties allow you to move the label
-        with respect to the grid lines. The reduceDims property will reduce
+
+        The raAngle and decAngle properties allow you to rotate the labels with
+        respect to the grid lines.  The four label[RA,Dec]Off[x,y] properties
+        allow you to move the label with respect to the grid lines. These six
+        properties can be useful in cases where JS9's simple label placement
+        algorithm is not sufficient. The reduceDims property will reduce
         the raLines and decLines properties by the ratio of image
         dimensions if one dimension is smaller than the other. This can
         prevent crowding in the smaller dimension.  The cover property

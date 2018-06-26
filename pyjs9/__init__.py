@@ -2427,6 +2427,28 @@ class JS9(object):
         """
         return self.send({'cmd': 'ShowShapeLayer', 'args': args})
 
+    def ToggleShapeLayers(self, *args):
+        """
+        Toggle display of the active shape layers
+
+        call:
+
+        ToggleShapeLayers()
+
+        While ShowShapeLayer() allows you to display or hide a single shape
+        layer, this routine will toggle display of all active layers in the
+        current image. An active layer is one that has not been turned off
+        usng the Shape Layers plugin or ShowShapeLayer().
+
+        The routine remembers which layers were active at the moment when
+        layers are hidden and restores only those layers in the next toggle.
+        Thus, if you have two layers, "regions" and "catalog1", and the
+        "catalog1" layer has previously been turned off, calling this routine
+        repeatedly will turn on and off the "regions" layer only.
+
+        """
+        return self.send({'cmd': 'ToggleShapeLayers', 'args': args})
+
     def ActiveShapeLayer(self, *args):
         """
         Make the specified shape layer the active layer

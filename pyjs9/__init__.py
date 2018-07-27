@@ -3221,9 +3221,20 @@ class JS9(object):
 
         call:
 
-        GatherDisplay()
+        GatherDisplay(dname, opts)
 
-        This routine move all images in other displays to this display.
+        where:
+
+        - dname: name of JS9 display to which the images will be gathered
+        - opts: optional object
+
+        You can supply an opts object containing the following properties:
+
+        - images: array of image handles (or indexes into JS9.images array)
+        to gather
+
+        This routine move all or selected images in other displays to this
+        display.
         """
         return self.send({'cmd': 'GatherDisplay', 'args': args})
 
@@ -3241,8 +3252,10 @@ class JS9(object):
         - opts: optional object for layout properties
 
         This routine moves each image in this display to a new display.
-        You can supply an opts object containing the layout properties:
+        You can supply an opts object containing the following properties:
 
+        - images: array of image handles (or indexes into JS9.images array)
+        to separate
         - layout: can be "horizontal", "vertical", "auto" (default: "auto")
         - leftMargin: margin in pixels between horizontally separated images
         - topMargin: margin in pixels between vertically separated images

@@ -1,3 +1,6 @@
+"""
+pyjs9.py: connects Python and JS9 via the JS9 (back-end) helper
+"""
 from __future__ import print_function
 
 import json
@@ -10,7 +13,7 @@ from six import BytesIO
 __all__ = ['JS9', 'js9Globals']
 
 """
-pyjs9.py connects python and js9 via the js9Helper.js back-end server
+pyjs9.py connects Python and JS9 via the JS9 (back-end) helper
 
 - The JS9 class constructor connects to a single JS9 instance in a web page.
 - The JS9 object supports the JS9 Public API and a shorter command-line syntax.
@@ -67,8 +70,7 @@ except ImportError:
 
 # in python 3 strings are unicode
 if six.PY3:
-    unicode = str
-
+    unicode = str  # pylint: disable=redefined-builtin
 
 # utilities
 def _decode_list(data):
@@ -101,7 +103,7 @@ def _decode_dict(data):
 
 # numpy-dependent routines
 if js9Globals['numpy']:
-    def _bp2np(bitpix):
+    def _bp2np(bitpix):  # pylint: disable=too-many-return-statements
         """
         Convert FITS bitpix to numpy datatype
         """
@@ -122,7 +124,7 @@ if js9Globals['numpy']:
         else:
             raise ValueError('unsupported bitpix: %d' % bitpix)
 
-    def _np2bp(dtype):
+    def _np2bp(dtype):  # pylint: disable=too-many-return-statements
         """
         Convert numpy datatype to FITS bitpix
         """
@@ -143,7 +145,7 @@ if js9Globals['numpy']:
         else:
             raise ValueError('unsupported dtype: %s' % dtype)
 
-    def _bp2py(bitpix):
+    def _bp2py(bitpix):  # pylint: disable=too-many-return-statements
         """
         Convert FITS bitpix to python datatype
         """
@@ -214,7 +216,7 @@ class JS9(object):
 
     """
 
-    def __init__(self, host='http://localhost:2718', id='JS9'):
+    def __init__(self, host='http://localhost:2718', id='JS9'):  # pylint: disable=redefined-builtin
         """
         :param host: host[:port] (default is 'http://localhost:2718')
         :param id: the JS9 display id (default is 'JS9')
@@ -240,9 +242,9 @@ class JS9(object):
         # add default port, if necessary
         c = host.rfind(':')
         s = host.find('/')
-        if(c <= s):
+        if c <= s:
             host += ':2718'
-        if(s < 0):
+        if s < 0:
             host = 'http://' + host
         self.__dict__['host'] = host
         # open socket.io connection, if necessary
@@ -250,7 +252,7 @@ class JS9(object):
             try:
                 a = host.rsplit(':', 1)
                 self.sockio = SocketIO(a[0], int(a[1]))
-            except Exception as e:
+            except Exception:  # pylint: disable=broad-except
                 js9Globals['transport'] = 'html'
         self._alive()
 
@@ -269,6 +271,9 @@ class JS9(object):
         self.send(None, msg='alive')
 
     def sockioCB(self, *args):
+        """
+        Internal routine
+        """
         self.__dict__['sockioResult'] = args[0]
 
     def send(self, obj, msg='msg'):
@@ -286,14 +291,15 @@ class JS9(object):
         """
         if obj is None:
             obj = {}
-        obj['id'] = self.id
+        obj['id'] = self.__dict__['id']
 
         if js9Globals['transport'] == 'html':
             jstr = json.dumps(obj)
+            host = self.__dict__['host']
             try:
-                url = requests.get(self.host + '/' + msg, params=jstr)
+                url = requests.get(host + '/' + msg, params=jstr)
             except IOError as e:
-                raise IOError('Cannot connect to {0}: {1}'.format(self.host,
+                raise IOError('Cannot connect to {0}: {1}'.format(host,
                                                                   e.strerror))
             urtn = url.text
             if 'ERROR:' in urtn:
@@ -363,7 +369,7 @@ class JS9(object):
             """
             if not js9Globals['fits']:
                 raise ValueError('SetFITS not defined (fits not found)')
-            if type(hdul) != fits.HDUList:
+            if not isinstance(hdul, fits.HDUList):
                 if js9Globals['fits'] == 1:
                     raise ValueError('requires astropy.HDUList as input')
                 else:
@@ -385,13 +391,15 @@ class JS9(object):
             return got
 
     else:
-        def GetFITS(self):
+        @staticmethod
+        def GetFITS():
             """
             This method is not defined because fits in not installed.
             """
             raise ValueError('GetFITS not defined (astropy.io.fits not found)')
 
-        def SetFITS(self):
+        @staticmethod
+        def SetFITS():
             """
             This method is not defined because fits in not installed.
             """
@@ -453,7 +461,7 @@ class JS9(object):
 
               >>>> j.RefreshImage(arr.tolist())
             """
-            if type(arr) != numpy.ndarray:
+            if not isinstance(arr, numpy.ndarray):
                 raise ValueError('requires numpy.ndarray as input')
             if dtype and dtype != arr.dtype:
                 narr = arr.astype(dtype)
@@ -485,13 +493,15 @@ class JS9(object):
             return self.Load(hdu)
 
     else:
-        def GetNumpy(self):
+        @staticmethod
+        def GetNumpy():
             """
             This method is not defined because numpy in not installed.
             """
             raise ValueError('GetNumpy not defined (numpy not found)')
 
-        def SetNumpy(self):
+        @staticmethod
+        def SetNumpy():
             """
             This method is not defined because numpy in not installed.
             """
@@ -1049,6 +1059,129 @@ class JS9(object):
         """
         return self.send({'cmd': 'BlendImage', 'args': args})
 
+    def SyncImages(self, *args):
+        """
+        Synchronize operations between two or more images
+
+        call:
+
+        SyncImages([ops], [images], [opts])  # set up synchronization
+        SyncImages(true||false)              # turn on/off synchronization
+
+        where:
+
+        - ops: array of operations on which to sync
+        - images: array of images to sync with this image
+        - opts: options for sync'ing
+
+        Synchronize two or more images, so that when an operation is performed
+        on one image, it also is performed on the other(s). For example, when
+        the colormap or scale is changed on an image, it also is changed on
+        the sync'ed images. Or, when a region is created, moved, resized, or
+        removed on an image, the same happens on the sync'ed images.
+
+        When the SyncImages() call is invoked, the current image is
+        configured to synchronize the specified images.  In addition, if
+        the reciprocate property is set in the opts object (see below),
+        the other images are also configured to synchronize one another (as
+        well as the current image). Once configuration is complete, a sync
+        command is executed immediately. If the current image already
+        displays one or more regions, these will be created in the target
+        images.
+
+        The operations that can be specified for sync'ing are:
+        "colormap", "pan", "regions", "scale", "wcs", "zoom", "contrastbias".
+        If no array is specified, the default array in JS9.globalOpts.syncOps
+        is used.
+
+        Images to synchronize can be specified as an array of image handles or
+        image ids. If no array is specified, all currently displayed images
+        are sync'ed.
+
+        The optional opts object can contain:
+
+        - reciprocate: boolean determining whether images sync one another
+        - reverse: boolean to reverse this image and target images (def: false)
+
+        If the opts object is not specified, the default value of
+        reciprocate is the value of the JS9.globalOpts.syncReciprocate
+        property.
+
+        Examples:
+
+        >>> # the current image will sync all operations for all images
+        >>> # sync reciprocally, so that changing any image syncs the others
+        >>> SyncImages()
+
+        >>> # current image will sync specified ops for foo1.fits,foo2.fits:
+        >>> SyncImages(["scale", "colormap"], ["foo1.fits", "foo2.fits"])
+
+        >>> # the current image will sync two images with default ops,
+        >>> # but the two images themselves will not sync images reciprocally
+        >>> SyncImages(null, ["foo1.fits", "foo2.fits"], {reciprocate: false});
+
+        Note that if the pan operation syncs two images having differently
+        sized fields of view, the smaller image will stop panning when it
+        reaches its edge, rather than displaying a blank field.
+
+        You can turn on/off syncing for a given image by specifying a single
+        boolean argument:
+
+        >>> # turn off sync'ing temporarily
+        >>> SyncImages(false);
+
+        This is different from unsync'ing in that you can turn sync'ing back
+        on without having to re-sync the images.
+        """
+        return self.send({'cmd': 'SyncImages', 'args': args})
+
+    def UnsyncImages(self, *args):
+        """
+        Unsynchronize two or more previously synchronized images
+
+        call:
+
+        UnsyncImages([ops], [images], [opts])  # clear synchronization
+
+        where:
+
+        - ops: array of operations to unsync
+        - images: array of images to unsync with this image
+        - opts: options for unsync'ing
+
+        Unsynchronize previously sync'ed images.
+
+        The operations that can be specified for unsync'ing are:
+        "colormap", "pan", "regions", "scale", "wcs", "zoom", "contrastbias".
+        If no array is specified, the default array in JS9.globalOpts.syncOps is
+        used. Thus, you can turn off sync'ing for specified operations, while
+        leaving others to be sync'ed.
+
+        Images to be unsync'ed can be specified as an array of image handles or
+        image ids. If no array is specified, all currently displayed images
+        are unsync'ed.
+
+        The optional opts object can contain:
+
+        - reciprocate: boolean determining whether images sync one another
+        - reverse: boolean to reverse this image and target images (def: false)
+
+        If the opts object is not specified, the default is to reciprocate based
+        on the value of the JS9.globalOpts.syncReciprocate property.
+
+        Examples:
+
+        >>> # this image won't sync on scale for foo1.fits and foo2.fits,
+        >>> # and they also will stop sync'ing
+        UnsyncImages(["scale"], ["foo1.fits", "foo2.fits"])
+
+        >>> # this image will still sync foo1.fits and foo2.fits, but
+        >>> # foo1.fits and foo2.fits will no longer sync this image:
+        UnsyncImages(null, ["foo1.fits", "foo2.fits"],
+                     {reverse: true, reciprocal: false})
+        """
+        return self.send({'cmd': 'UnsyncImages', 'args': args})
+
     def BlendDisplay(self, *args):
         """
         Set global blend mode for specified display
@@ -1374,11 +1507,11 @@ class JS9(object):
 
         The zoom directives are:
 
-        -  x[n]\|X[n]: multiply the zoom by n (e.g. 'x2')
+        -  x[n]|X[n]: multiply the zoom by n (e.g. 'x2')
         -  /[n]: divide the zoom by n (e.g. '/2')
-        -  in\|In: zoom in by a factor of two
-        -  out\|Out: zoom out by a factor of two
-        -  toFit\|ToFit: zoom to fit image in display
+        -  in|In: zoom in by a factor of two
+        -  out|Out: zoom out by a factor of two
+        -  toFit|ToFit: zoom to fit image in display
         """
         return self.send({'cmd': 'SetZoom', 'args': args})
 

@@ -513,7 +513,7 @@ class JS9(object):
 
         call:
 
-        Load(url, opts)
+        JS9.Load(url, opts)
 
         where:
 
@@ -553,7 +553,7 @@ class JS9(object):
 
         call:
 
-        LoadProxy(url, opts)
+        JS9.LoadProxy(url, opts)
 
         where:
 
@@ -593,7 +593,7 @@ class JS9(object):
 
         call:
 
-        status  = GetLoadStatus(id)
+        status  = JS9.GetLoadStatus(id)
 
         where:
 
@@ -623,7 +623,7 @@ class JS9(object):
 
         call:
 
-        RefreshImage(input)
+        JS9.RefreshImage(input)
 
         where:
 
@@ -674,7 +674,7 @@ class JS9(object):
 
         call:
 
-        CloseImage()
+        JS9.CloseImage()
 
         Each loaded image claims a non-trivial amount of memory from a finite
         amount of browser heap space. For example, the default 32-bit version
@@ -696,7 +696,7 @@ class JS9(object):
 
         call:
 
-        imdata  = GetImageData(dflag)
+        imdata  = JS9.GetImageData(dflag)
 
         where:
 
@@ -955,7 +955,7 @@ class JS9(object):
 
         JS9.BlendImage(blendMode, opacity)
 
-        Calling sequences:
+        calling sequences:
 
         JS9.BlendImage()                   # return current blend params
         JS9.BlendImage(true||false)        # turn on/off blending
@@ -1065,8 +1065,8 @@ class JS9(object):
 
         call:
 
-        SyncImages([ops], [images], [opts])  # set up synchronization
-        SyncImages(true||false)              # turn on/off synchronization
+        JS9.SyncImages([ops], [images], [opts])  # set up synchronization
+        JS9.SyncImages(true||false)              # turn on/off synchronization
 
         where:
 
@@ -1141,7 +1141,7 @@ class JS9(object):
 
         call:
 
-        UnsyncImages([ops], [images], [opts])  # clear synchronization
+        JS9.UnsyncImages([ops], [images], [opts])  # clear synchronization
 
         where:
 
@@ -1188,7 +1188,7 @@ class JS9(object):
 
         call:
 
-        mode = BlendDisplay(True|False)
+        mode = JS9.BlendDisplay(True|False)
 
         returns:
 
@@ -1206,7 +1206,7 @@ class JS9(object):
 
         call:
 
-        cmap  = GetColormap()
+        cmap  = JS9.GetColormap()
 
         returns:
 
@@ -1226,7 +1226,7 @@ class JS9(object):
 
         call:
 
-        SetColormap(cmap, [contrast, bias])
+        JS9.SetColormap(cmap, [contrast, bias])
 
         where:
 
@@ -1242,20 +1242,37 @@ class JS9(object):
 
     def SaveColormap(self, *args):
         """
-        Save current colormap definition
+        Save colormap(s)
 
-        call:
+        calling sequences:
 
-        JS9.SaveColormap(filename)
+        JS9.SaveColormap()                 # save current colormap to "js9.cmap"
+        JS9.SaveColormap(fname)            # save current colormap to fname
+        JS9.SaveColormap(cmapArray)        # save array of ccmaps to "js9.cmap"
+        JS9.SaveColormap(fname, cmapArray) # save array of cmaps to fname
 
         where:
 
-        - filename: output file name
+        - fname: output file name
+        - cmapArray: optional array of colormap names to save
 
-        Save the current colormap definition for displayed image as a
-        json file. If filename is not specified, the file will be
-        saved as "js9.cmap".  This is useful if you want to edit the
-        current definition to make a new colormap.
+        As shown by the calling sequences above, you can use this routine to
+        save either the current colormap or a list of colormaps taken from the
+        specified array. You also can choose to save to a particular filename
+        or the default "js9.cmap":
+
+        >>> # save the current colormap in js9.cmap
+        >>> JS9.SaveColormap()
+        >>> # save the current colormap in foo.cmap
+        >>> JS9.SaveColormap("foo.cmap")
+        >>> # save the foo1 and foo2 colormaps in js9.cmap
+        >>> JS9.SaveColormap(["foo1", "foo2"])
+        >>> # save the user-defined foo1 and foo2 colormaps in foo.cmap
+        >>> JS9.SaveColormap("foo.cmap", ["foo1", "foo2"])
+
+        The colormaps are saved in JSON format. Multiple saved colormaps will
+        be stored in a JSON array, while a single saved colormap will be saved
+        at the top level.
 
         Don't forget that the file is saved by the browser, in whatever
         location you have set up for downloads.
@@ -1428,7 +1445,7 @@ class JS9(object):
 
         call:
 
-        rgbobj  = GetRGBMode()
+        rgbobj  = JS9.GetRGBMode()
 
         returns:
 
@@ -1448,7 +1465,7 @@ class JS9(object):
         """
         call:
 
-        SetRGBMode(mode, [imobj])
+        JS9.SetRGBMode(mode, [imobj])
 
         where:
 
@@ -1485,7 +1502,7 @@ class JS9(object):
 
         call:
 
-        zoom  = GetZoom()
+        zoom  = JS9.GetZoom()
 
         returns:
 
@@ -1499,7 +1516,7 @@ class JS9(object):
 
         call:
 
-        SetZoom(zoom)
+        JS9.SetZoom(zoom)
 
         where:
 
@@ -1521,7 +1538,7 @@ class JS9(object):
 
         call:
 
-        ipos  = GetPan()
+        ipos  = JS9.GetPan()
 
         returns:
 
@@ -1540,7 +1557,7 @@ class JS9(object):
 
         call:
 
-        SetPan(x, y)
+        JS9.SetPan(x, y)
 
         where:
 
@@ -1559,7 +1576,7 @@ class JS9(object):
 
         call:
 
-        scale  = GetScale()
+        scale  = JS9.GetScale()
 
         returns:
 
@@ -1579,7 +1596,7 @@ class JS9(object):
 
         call:
 
-        SetScale(scale, smin, smax)
+        JS9.SetScale(scale, smin, smax)
 
         where:
 
@@ -1662,7 +1679,7 @@ class JS9(object):
 
         call:
 
-        valpos  = GetValPos(ipos)
+        valpos  = JS9.GetValPos(ipos)
 
         where:
 
@@ -1700,7 +1717,7 @@ class JS9(object):
 
         call:
 
-        wcsobj  = PixToWCS(x, y)
+        wcsobj  = JS9.PixToWCS(x, y)
 
         where:
 
@@ -1727,7 +1744,7 @@ class JS9(object):
 
         call:
 
-        pixobj  = WCSToPix(ra, dec)
+        pixobj  = JS9.WCSToPix(ra, dec)
 
         where:
 
@@ -1752,7 +1769,7 @@ class JS9(object):
 
         call:
 
-        dpos  = ImageToDisplayPos(ipos)
+        dpos  = JS9.ImageToDisplayPos(ipos)
 
         where:
 
@@ -1776,7 +1793,7 @@ class JS9(object):
 
         call:
 
-        ipos  = DisplayToImagePos(dpos)
+        ipos  = JS9.DisplayToImagePos(dpos)
 
         where:
 
@@ -1799,7 +1816,7 @@ class JS9(object):
 
         call:
 
-        lpos  = ImageToLogicalPos(ipos, lcs)
+        lpos  = JS9.ImageToLogicalPos(ipos, lcs)
 
         where:
 
@@ -1830,7 +1847,7 @@ class JS9(object):
 
         call:
 
-        ipos  = LogicalToImagePos(lpos, lcs)
+        ipos  = JS9.LogicalToImagePos(lpos, lcs)
 
         where:
 
@@ -1861,7 +1878,7 @@ class JS9(object):
 
         call:
 
-        unitsstr  = GetWCSUnits()
+        unitsstr  = JS9.GetWCSUnits()
 
         returns:
 
@@ -1875,7 +1892,7 @@ class JS9(object):
 
         call:
 
-        SetWCSUnits(unitsstr)
+        JS9.SetWCSUnits(unitsstr)
 
         where:
 
@@ -1891,7 +1908,7 @@ class JS9(object):
 
         call:
 
-        sysstr  = GetWCSSys()
+        sysstr  = JS9.GetWCSSys()
 
         returns:
 
@@ -1906,7 +1923,7 @@ class JS9(object):
 
         call:
 
-        SetWCSSys(sysstr)
+        JS9.SetWCSSys(sysstr)
 
         where:
 
@@ -1928,7 +1945,7 @@ class JS9(object):
 
         call:
 
-        DisplayCoordGrid(mode, opts)
+        JS9.DisplayCoordGrid(mode, opts)
 
         where:
 
@@ -2019,7 +2036,7 @@ class JS9(object):
 
         call:
 
-        CountsInRegions(sregion, bregion, opts)
+        JS9.CountsInRegions(sregion, bregion, opts)
 
         where:
 
@@ -2520,7 +2537,7 @@ class JS9(object):
 
         call:
 
-        lid  = NewShapeLayer(layer, opts)
+        lid  = JS9.NewShapeLayer(layer, opts)
 
         where:
 
@@ -2547,7 +2564,7 @@ class JS9(object):
 
         call:
 
-        ShowShapeLayer(layer, mode)
+        JS9.ShowShapeLayer(layer, mode)
 
         where:
 
@@ -2566,7 +2583,7 @@ class JS9(object):
 
         call:
 
-        ToggleShapeLayers()
+        JS9.ToggleShapeLayers()
 
         While ShowShapeLayer() allows you to display or hide a single shape
         layer, this routine will toggle display of all active layers in the
@@ -2588,7 +2605,7 @@ class JS9(object):
 
         call:
 
-        ActiveShapeLayer(layer)
+        JS9.ActiveShapeLayer(layer)
 
         where:
 
@@ -2616,7 +2633,7 @@ class JS9(object):
 
         call:
 
-        AddShapes(layer, sarr, opts)
+        JS9.AddShapes(layer, sarr, opts)
 
         where:
 
@@ -2674,7 +2691,7 @@ class JS9(object):
 
         call:
 
-        RemoveShapes(layer, shapes)
+        JS9.RemoveShapes(layer, shapes)
 
         where:
 
@@ -2690,7 +2707,7 @@ class JS9(object):
 
         call:
 
-        GetShapes(layer, shapes)
+        JS9.GetShapes(layer, shapes)
 
         where:
 
@@ -2726,7 +2743,7 @@ class JS9(object):
 
         call:
 
-        ChangeShapes(layer, shapes, opts)
+        JS9.ChangeShapes(layer, shapes, opts)
 
         where:
 
@@ -2746,7 +2763,7 @@ class JS9(object):
 
         call:
 
-        id  = AddRegions(rarr, opts)
+        id  = JS9.AddRegions(rarr, opts)
 
         where:
 
@@ -2804,7 +2821,7 @@ class JS9(object):
 
         call:
 
-        rarr  = GetRegions(regions)
+        rarr  = JS9.GetRegions(regions)
 
         where:
 
@@ -2847,7 +2864,7 @@ class JS9(object):
 
         call:
 
-        ChangeRegions(regions, opts)
+        JS9.ChangeRegions(regions, opts)
 
         where:
 
@@ -2867,7 +2884,7 @@ class JS9(object):
 
         call:
 
-        RemoveRegions(regions)
+        JS9.RemoveRegions(regions)
 
         where:
 
@@ -3015,7 +3032,7 @@ class JS9(object):
 
         call:
 
-        RunAnalysis(name, parr)
+        JS9.RunAnalysis(name, parr)
 
         where:
 
@@ -3255,7 +3272,7 @@ class JS9(object):
 
         call:
 
-        CreateMosaic(which, opts)
+        JS9.CreateMosaic(which, opts)
 
         where:
 
@@ -3323,7 +3340,7 @@ class JS9(object):
 
         call:
 
-        ResizeDisplay(width, height)
+        JS9.ResizeDisplay(width, height)
 
         where:
 
@@ -3354,7 +3371,7 @@ class JS9(object):
 
         call:
 
-        GatherDisplay(dname, opts)
+        JS9.GatherDisplay(dname, opts)
 
         where:
 
@@ -3377,7 +3394,7 @@ class JS9(object):
 
         call:
 
-        SeparateDisplay(dname, opts)
+        JS9.SeparateDisplay(dname, opts)
 
         where:
 
@@ -3408,7 +3425,7 @@ class JS9(object):
 
         call:
 
-        CenterDisplay()
+        JS9.CenterDisplay()
 
         where:
 
@@ -3424,7 +3441,7 @@ class JS9(object):
 
         call:
 
-        CloseDisplay(dname)
+        JS9.CloseDisplay(dname)
 
         where:
 
@@ -3434,13 +3451,39 @@ class JS9(object):
         """
         return self.send({'cmd': 'CloseDisplay', 'args': args})
 
+    def RenameDisplay(self, *args):
+        """
+        Rename the id of a JS9 display
+
+        calling sequences:
+
+        JS9.RenameDisplay(nid)        # change default id (usually "JS9") to nid
+        JS9.RenameDisplay(oid, nid)   # change oid to nid
+
+        where:
+
+        - oid: old name of JS9 display
+        - nid: new name of JS9 display
+
+        This routine is used by the Desktop version of JS9 to implement the
+        --title (and --renameid) switch(es), which change the id of the
+        JS9 display(s) to the specified id(s). Once an id has been renamed,
+        external communication (via the js9 script or pyjs9) should target
+        the new id instead of the original id.
+
+        The original id is still available internally, so Javascript public
+        API calls on the web page itself can target either the original or
+        the new id using the {display: "id"} syntax.
+        """
+        return self.send({'cmd': 'RenameDisplay', 'args': args})
+
     def DisplayHelp(self, *args):
         """
         Display help in a light window
 
         call:
 
-        DisplayHelp(name)
+        JS9.DisplayHelp(name)
 
         where:
 
@@ -3457,7 +3500,9 @@ class JS9(object):
         """
         Display content in a light window
 
-        LightWindow(id, type, content, title, opts)
+        call:
+
+        JS9.LightWindow(id, type, content, title, opts)
 
         where:
 

@@ -3061,18 +3061,38 @@ class JS9(object):
 
         call:
 
-        JS9.SavePNG(filename)
+        JS9.SavePNG(filename, opts)
 
         where:
 
         - filename: output file name
+        - opts: optional save parameters
 
         Save the currently displayed image as a PNG file. If filename is not
-        specified, the file will be saved as "js9.png". The image is saved
-        along with the graphical overlays (regions, etc.).
+        specified, the file will be saved as "js9.png".
 
-            Don't forget that the file is saved by the browser, in whatever
-            location you have set up for downloads.
+        The opts object can specify the following properties:
+
+        - layers: save graphical layers (e.g. regions) (default is true)
+        - source: "image" or "display" (default is "display")
+
+        By default, SavePNG() will save all of the 2D graphics in the
+        shape layers (regions, catalogs, etc.) as well as the image. Set
+        the layers property to false to save only the image.
+
+        Also by default, SavePNG() will save the RGB pixels from the
+        display. This means, for example, that a blended set of images will
+        save the blended pixels. If you want to save the RGB pixels from one
+        of the images in a blended image, you can specify the source
+        property to the image. For example, in the js9blend.html demo,
+        you can save the RGB pixels of the Chandra image by specifying use of
+        the "image" source and specifying the image's id in the display
+        parameter:
+
+        >>> SavePNG("foo.png", {"source":"image"}, {"display":"chandra.fits"});
+
+        Don't forget that the file is saved by the browser, in whatever
+        location you have set up for downloads.
         """
         return self.send({'cmd': 'SavePNG', 'args': args})
 
@@ -3082,21 +3102,42 @@ class JS9(object):
 
         call:
 
-        JS9.SaveJPEG(filename, quality)
+        JS9.SaveJPEG(filename, opts)
 
         where:
 
         - filename: output file name
-        - quality: a number between 0 and 1 indicating image quality
+        - opts: optional save parameters or a number between 0 and 1
+                indicating image quality
 
         Save the currently displayed image as a JPEG file. If filename is not
-        specified, the file will be saved as "js9.jpeg". The image is saved
-        along with the graphical overlays (regions, etc.). If quality
-        parameter is not specified, a suitable default is used. On FireFox (at
-        least), this default values is 0.95 (I think).
+        specified, the file will be saved as "js9.png".
 
-            Don't forget that the file is saved by the browser, in whatever
-            location you have set up for downloads.
+        The opts object can specify the following properties:
+        - layers: save graphical layers (e.g. regions) (default is true)
+        - source: "image" or "display" (default is "display")
+        - quality: JPEG encoder quality
+
+        By default, SaveJPEG() will save all of the 2D graphics in the
+        shape layers (regions, catalogs, etc.) as well as the image. Set
+        the layers property to false to save only the image.
+
+        Also by default, SaveJPEG() will save the RGB pixels from the
+        display. This means, for example, that a blended set of images will
+        save the blended pixels. If you want to save the RGB pixels from one
+        of the images in a blended image, you can specify the source
+        property to the image. For example, in the js9blend.html demo,
+        you can save the RGB pixels of the Chandra image by specifying use of
+        the "image" source and specifying the image's id in the display
+        parameter:
+
+        >>> SaveJPEG("foo.png", {"source":"image"}, {"display":"chandra.fits"});
+
+        If encoder quality parameter is not specified, a suitable default is
+        used. On FireFox (at least), this default values is 0.95 (I think).
+
+        Don't forget that the file is saved by the browser, in whatever
+        location you have set up for downloads.
         """
         return self.send({'cmd': 'SaveJPEG', 'args': args})
 

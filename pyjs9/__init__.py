@@ -1570,6 +1570,31 @@ class JS9(object):
         """
         return self.send({'cmd': 'SetPan', 'args': args})
 
+    def AlignPanZoom(self, *args):
+        """
+        Align pan and zoom of the current image to a target image
+
+        call:
+
+        JS9.AlignPanZoom(im)
+
+        where:
+        - im: image containing the WCS used to perform the alignment
+
+        This routine changes the pan and zoom of the current image to match a
+        target image, assuming both have WCS info available. The image is
+        panned to the RA, Dec at the center of the target image's display. The
+        zoom is also matched. The pixel size (as specified by the FITS CDELT1
+        parameter) will be taken into account when zooming, but not the image
+        rotation or flip. This routine is faster than ReprojectData() for
+        aligning reasonably similar images.
+
+        No attempt is make to keep the images aligned after the call. This
+        allows you to make adjustments to the current and/or target images and
+        then re-align as needed.
+        """
+        return self.send({'cmd': 'AlignPanZoom', 'args': args})
+
     def GetScale(self, *args):
         """
         Get the image scale

@@ -5,10 +5,13 @@ from __future__ import print_function
 
 import json
 import base64
+#from threading import get_ident as gettid
+from threading import Condition
 
 import requests
 import six
 from six import BytesIO
+
 
 __all__ = ['JS9', 'js9Globals']
 
@@ -19,7 +22,7 @@ pyjs9.py connects Python and JS9 via the JS9 (back-end) helper
 - The JS9 object supports the JS9 Public API and a shorter command-line syntax.
 - See: http://js9.si.edu/js9/help/publicapi.html
 - Send/retrieve numpy arrays and astropy (or pyfits) hdulists to/from js9.
-- Use socketIO_client for fast, persistent connections to the JS9 back-end
+- Use python-socketio for fast, persistent connections to the JS9 back-end
 """
 
 # pyjs9 version
@@ -61,10 +64,14 @@ except ImportError:
 
 # load socket.io, if available
 try:
-    from socketIO_client import SocketIO, LoggingNamespace
+#    from socketIO_client import SocketIO, LoggingNamespace
+    import socketio
+
+    print('set socketio transport')
     js9Globals['transport'] = 'socketio'
     js9Globals['wait'] = 10
 except ImportError:
+    print("import socketio error")
     js9Globals['transport'] = 'html'
     js9Globals['wait'] = 0
 
@@ -109,20 +116,41 @@ if js9Globals['numpy']:
         """
         if bitpix == 8:
             return numpy.uint8
-        elif bitpix == 16:
+        if bitpix == 16:
             return numpy.int16
-        elif bitpix == 32:
+        if bitpix == 32:
             return numpy.int32
-        elif bitpix == 64:
+        if bitpix == 64:
             return numpy.int64
-        elif bitpix == -32:
+        if bitpix == -32:
             return numpy.float32
-        elif bitpix == -64:
+        if bitpix == -64:
             return numpy.float64
-        elif bitpix == -16:
+        if bitpix == -16:
             return numpy.uint16
-        else:
-            raise ValueError('unsupported bitpix: %d' % bitpix)
+        raise ValueError('unsupported bitpix: %d' % bitpix)
+
+    _NP_TYPE_MAP = (
+        # pylint: disable=bad-whitespace
+        (numpy.uint8  , numpy.uint8,  ),
+        (numpy.int8   , numpy.int16,  ),
+        (numpy.uint16 , numpy.uint16, ),
+        (numpy.int16  , numpy.int16,  ),
+        (numpy.int32  , numpy.int32,  ),
+        (numpy.uint32 , numpy.int64,  ),
+        (numpy.int64  , numpy.int64,  ),
+        (numpy.float16, numpy.float32,),
+        (numpy.float32, numpy.float32,),
+        (numpy.float64, numpy.float64,),
+    )
+
+    def _cvt2np(ndarr: numpy.ndarray):
+        # NOTE cvt2np may be merged into np2bp
+        dtype = ndarr.dtype
+        for t in _NP_TYPE_MAP:
+            if numpy.issubdtype(dtype, t[0]):
+                return ndarr.astype(t[1])
+        return ndarr
 
     def _np2bp(dtype):  # pylint: disable=too-many-return-statements
         """
@@ -130,17 +158,17 @@ if js9Globals['numpy']:
         """
         if dtype == numpy.uint8:
             return 8
-        elif dtype == numpy.int16:
+        if dtype == numpy.int16:
             return 16
-        elif dtype == numpy.int32:
+        if dtype == numpy.int32:
             return 32
-        elif dtype == numpy.int64:
+        if dtype == numpy.int64:
             return 64
-        elif dtype == numpy.float32:
+        if dtype == numpy.float32:
             return -32
-        elif dtype == numpy.float64:
+        if dtype == numpy.float64:
             return -64
-        elif dtype == numpy.uint16:
+        if dtype == numpy.uint16:
             return -16
         else:
             raise ValueError('unsupported dtype: %s' % dtype)
@@ -250,10 +278,17 @@ class JS9(object):
         # open socket.io connection, if necessary
         if js9Globals['transport'] == 'socketio':
             try:
-                a = host.rsplit(':', 1)
-                self.sockio = SocketIO(a[0], int(a[1]))
-            except Exception:  # pylint: disable=broad-except
+                #a = host.rsplit(':', 1)
+                #self.sockio = SocketIO(a[0], int(a[1]))
+                self.sockio = socketio.Client()
+                self.sockio.connect(host)
+            except Exception as e:  # pylint: disable=broad-except
+                import traceback
+                traceback.print_exc()
+                print(e)
+                print('set back to html')
                 js9Globals['transport'] = 'html'
+        self._block_cb = None
         self._alive()
 
     def __setitem__(self, itemname, value):
@@ -261,7 +296,7 @@ class JS9(object):
         An internal routine to process some assignments specially
         """
         self.__dict__[itemname] = value
-        if itemname == 'host' or itemname == 'id':
+        if itemname in ('host', 'id',):
             self._alive()
 
     def _alive(self):
@@ -274,7 +309,11 @@ class JS9(object):
         """
         Internal routine
         """
+#        print('tid: ', gettid(), ' in callback:', args)
         self.__dict__['sockioResult'] = args[0]
+        self._block_cb.acquire()
+        self._block_cb.notify()
+        self._block_cb.release()
 
     def send(self, obj, msg='msg'):
         """
@@ -310,12 +349,19 @@ class JS9(object):
                 # res = url.json()
                 res = json.loads(urtn, object_hook=_decode_dict)
             except ValueError:   # not json
+                import traceback
+                traceback.print_exc()
                 res = urtn
             return res
         else:
+            #print('tid: ', gettid())
             self.__dict__['sockioResult'] = ''
-            self.sockio.emit('msg', obj, self.sockioCB)
-            self.sockio.wait_for_callbacks(seconds=js9Globals['wait'])
+            self._block_cb = Condition()
+            self._block_cb.acquire()
+            self.sockio.emit('msg', obj, callback=self.sockioCB)
+            self._block_cb.wait(timeout=js9Globals['wait'])
+            self._block_cb.release()
+#            self.sockio.wait_for_callbacks(seconds=js9Globals['wait'])
             if self.__dict__['sockioResult'] and \
                isinstance(self.__dict__['sockioResult'], str) and \
                'ERROR:' in self.__dict__['sockioResult']:
@@ -380,6 +426,8 @@ class JS9(object):
             hdul.writeto(memstr, output_verify=js9Globals['output_verify'])
             # get memory string as an encoded string
             encstr = base64.b64encode(memstr.getvalue())
+            if six.PY3:
+                encstr = encstr.decode()
             # set up JS9 options
             opts = {}
             if name:
@@ -466,14 +514,8 @@ class JS9(object):
             if dtype and dtype != arr.dtype:
                 narr = arr.astype(dtype)
             else:
-                if arr.dtype == numpy.int8:
-                    narr = arr.astype(numpy.int16)
-                elif arr.dtype == numpy.uint32:
-                    narr = arr.astype(numpy.int64)
-                elif hasattr(numpy, 'float16') and arr.dtype == numpy.float16:
-                    narr = arr.astype(numpy.float32)
-                else:
-                    narr = arr
+                narr = _cvt2np(arr)
+
             if not narr.flags['C_CONTIGUOUS']:
                 narr = numpy.ascontiguousarray(narr)
             # parameters to pass back to JS9
@@ -483,6 +525,8 @@ class JS9(object):
             dmax = narr.max().tolist()
             # base64-encode numpy array in native format
             encarr = base64.b64encode(narr.tostring())
+            if six.PY3:
+                encarr = encarr.decode()
             # create object to send to JS9 containing encoded array
             hdu = {'naxis': 2, 'naxis1': w, 'naxis2': h, 'bitpix': bp,
                    'dmin': dmin, 'dmax': dmax, 'encoding': 'base64',

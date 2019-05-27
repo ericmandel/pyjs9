@@ -29,7 +29,7 @@ Requirements: pyjs9 communicates with a JS9 back-end Node server
 (which communicates with the browser itself). By default, pyjs9 utilizes the
 `requests <http://www.python-requests.org/en/latest/>` module to
 communicate with the JS9  back-end server. However, if you install
-`socketIO_client <https://pypi.python.org/pypi/socketIO-client>`,
+`python-socketio` <https://pypi.org/project/python-socketio>`,
 pyjs9 will use the faster, persistent `socket.io http://socket.io/` protocol.
 
 Install from the repository using pip, as usual::
@@ -49,7 +49,7 @@ Optional dependencies::
 
     numpy               # support for GetNumpy and SetNumpy methods
     astropy             # support for GetFITS and SetFITS methods
-    socketIO-client     # fast, persistent socket.io protocol, instead of html
+    python-socketio     # fast, persistent socket.io protocol, instead of html
 
 To run::
 

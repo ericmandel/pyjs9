@@ -25,12 +25,14 @@ pyjs9.py connects Python and JS9 via the js9Helper.js back-end server::
 - See: https://js9.si.edu/js9/help/publicapi.html for info about the public api
 - Send/retrieve numpy arrays and astropy (or pyfits) hdulists to/from JS9.
 
-Requirements: pyjs9 communicates with a JS9 back-end Node server
-(which communicates with the browser itself). By default, pyjs9 utilizes the
-`requests <http://www.python-requests.org/en/latest/>` module to
-communicate with the JS9  back-end server. However, if you install
-`python-socketio` <https://pypi.org/project/python-socketio>`,
-pyjs9 will use the faster, persistent `socket.io http://socket.io/` protocol.
+Requirements: Python 3.5 or higher is required. Beyond that, pyjs9
+communicates with a JS9 back-end Node server (which communicates with
+the browser itself). By default, pyjs9 utilizes the `requests
+<http://www.python-requests.org/en/latest/>` module to communicate
+with the JS9 back-end server. However, if you install
+`python-socketio` <https://pypi.org/project/python-socketio>`, pyjs9
+will use the faster, persistent `socket.io http://socket.io/`
+protocol.
 
 Install from the repository using pip, as usual::
 

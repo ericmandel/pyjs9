@@ -5,7 +5,8 @@ from __future__ import print_function
 
 import json
 import base64
-#from threading import get_ident as gettid
+import logging
+from traceback import format_exc
 from threading import Condition
 
 import requests
@@ -64,14 +65,12 @@ except ImportError:
 
 # load socket.io, if available
 try:
-#    from socketIO_client import SocketIO, LoggingNamespace
     import socketio
-
-    print('set socketio transport')
+    logging.info('set socketio transport')
     js9Globals['transport'] = 'socketio'
     js9Globals['wait'] = 10
 except ImportError:
-    print("import socketio error")
+    logging.warning('no python-socketio, use html transport')
     js9Globals['transport'] = 'html'
     js9Globals['wait'] = 0
 
@@ -278,15 +277,12 @@ class JS9(object):
         # open socket.io connection, if necessary
         if js9Globals['transport'] == 'socketio':
             try:
-                #a = host.rsplit(':', 1)
-                #self.sockio = SocketIO(a[0], int(a[1]))
                 self.sockio = socketio.Client()
                 self.sockio.connect(host)
             except Exception as e:  # pylint: disable=broad-except
-                import traceback
-                traceback.print_exc()
-                print(e)
-                print('set back to html')
+                logging.error('socketio connect failed: %s', e)
+                logging.error(format_exc())
+                logging.warning('fallback to html transport')
                 js9Globals['transport'] = 'html'
         self._block_cb = None
         self._alive()
@@ -309,7 +305,7 @@ class JS9(object):
         """
         Internal routine
         """
-#        print('tid: ', gettid(), ' in callback:', args)
+        logging.debug('socketio callback, args: %s', args)
         self.__dict__['sockioResult'] = args[0]
         self._block_cb.acquire()
         self._block_cb.notify()
@@ -349,12 +345,11 @@ class JS9(object):
                 # res = url.json()
                 res = json.loads(urtn, object_hook=_decode_dict)
             except ValueError:   # not json
-                import traceback
-                traceback.print_exc()
+                logging.error('json loads failed: %s', e)
+                logging.error(format_exc())
                 res = urtn
             return res
         else:
-            #print('tid: ', gettid())
             self.__dict__['sockioResult'] = ''
             self._block_cb = Condition()
             self._block_cb.acquire()
@@ -425,9 +420,7 @@ class JS9(object):
             # write fits to memory string
             hdul.writeto(memstr, output_verify=js9Globals['output_verify'])
             # get memory string as an encoded string
-            encstr = base64.b64encode(memstr.getvalue())
-            if six.PY3:
-                encstr = encstr.decode()
+            encstr = base64.b64encode(memstr.getvalue()).decode()
             # set up JS9 options
             opts = {}
             if name:
@@ -524,9 +517,7 @@ class JS9(object):
             dmin = narr.min().tolist()
             dmax = narr.max().tolist()
             # base64-encode numpy array in native format
-            encarr = base64.b64encode(narr.tostring())
-            if six.PY3:
-                encarr = encarr.decode()
+            encarr = base64.b64encode(narr.tostring()).decode()
             # create object to send to JS9 containing encoded array
             hdu = {'naxis': 2, 'naxis1': w, 'naxis2': h, 'bitpix': bp,
                    'dmin': dmin, 'dmax': dmax, 'encoding': 'base64',

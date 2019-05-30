@@ -10,8 +10,7 @@ from traceback import format_exc
 from threading import Condition
 
 import requests
-import six
-from six import BytesIO
+from io import BytesIO
 
 
 __all__ = ['JS9', 'js9Globals']
@@ -74,17 +73,11 @@ except ImportError:
     js9Globals['transport'] = 'html'
     js9Globals['wait'] = 0
 
-# in python 3 strings are unicode
-if six.PY3:
-    unicode = str  # pylint: disable=redefined-builtin
-
 # utilities
 def _decode_list(data):
     rv = []
     for item in data:
-        if six.PY2 and isinstance(item, unicode):
-            item = item.encode('utf-8')
-        elif isinstance(item, list):
+        if isinstance(item, list):
             item = _decode_list(item)
         elif isinstance(item, dict):
             item = _decode_dict(item)
@@ -95,11 +88,7 @@ def _decode_list(data):
 def _decode_dict(data):
     rv = {}
     for key, value in data.items():
-        if six.PY2 and isinstance(key, unicode):
-            key = key.encode('utf-8')
-        if six.PY2 and isinstance(value, unicode):
-            value = value.encode('utf-8')
-        elif isinstance(value, list):
+        if isinstance(value, list):
             value = _decode_list(value)
         elif isinstance(value, dict):
             value = _decode_dict(value)
@@ -210,11 +199,7 @@ if js9Globals['numpy']:
             else:
                 arr = numpy.array(s, dtype=dtype).reshape((h, w))
         elif js9Globals['retrieveAs'] == 'base64':
-            if six.PY3:
-                im_data = im['data'].encode()
-            else:
-                im_data = im['data']
-            s = base64.decodestring(im_data)[0:dlen]
+            s = base64.decodestring(im['data'].encode())[0:dlen]
             if d > 1:
                 arr = numpy.frombuffer(s, dtype=dtype).reshape((d, h, w))
             else:

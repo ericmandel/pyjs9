@@ -70,7 +70,7 @@ try:
     js9Globals['transport'] = 'socketio'
     js9Globals['wait'] = 10
 except ImportError:
-    logging.warning('no python-socketio, use html transport')
+    logging.info('no python-socketio, use html transport')
     js9Globals['transport'] = 'html'
     js9Globals['wait'] = 0
 
@@ -280,9 +280,7 @@ class JS9(object):
                 self.sockio = socketio.Client()
                 self.sockio.connect(host)
             except Exception as e:  # pylint: disable=broad-except
-                logging.error('socketio connect failed: %s', e)
-                logging.error(format_exc())
-                logging.warning('fallback to html transport')
+                logging.warning('socketio connect failed: %s, using html', e)
                 js9Globals['transport'] = 'html'
         self._block_cb = None
         self._alive()
@@ -334,8 +332,7 @@ class JS9(object):
             try:
                 url = requests.get(host + '/' + msg, params=jstr)
             except IOError as e:
-                raise IOError('Cannot connect to {0}: {1}'.format(host,
-                                                                  e.strerror))
+                raise IOError('Cannot connect to {0}: {1}'.format(host, e))
             urtn = url.text
             if 'ERROR:' in urtn:
                 raise ValueError(urtn)
@@ -345,8 +342,6 @@ class JS9(object):
                 # res = url.json()
                 res = json.loads(urtn, object_hook=_decode_dict)
             except ValueError:   # not json
-                logging.error('json loads failed: %s', e)
-                logging.error(format_exc())
                 res = urtn
             return res
         else:

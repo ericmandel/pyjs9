@@ -44,7 +44,6 @@ or from a local copy::
 
 Mandatory dependencies::
 
-    six
     requests
 
 Optional dependencies::

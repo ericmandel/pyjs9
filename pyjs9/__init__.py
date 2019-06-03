@@ -12,7 +12,6 @@ from threading import Condition
 import requests
 from io import BytesIO
 
-
 __all__ = ['JS9', 'js9Globals']
 
 """

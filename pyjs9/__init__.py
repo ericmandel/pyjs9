@@ -8,9 +8,9 @@ import base64
 import logging
 from traceback import format_exc
 from threading import Condition
+from io import BytesIO
 
 import requests
-from io import BytesIO
 
 __all__ = ['JS9', 'js9Globals']
 
@@ -157,8 +157,7 @@ if js9Globals['numpy']:
             return -64
         if dtype == numpy.uint16:
             return -16
-        else:
-            raise ValueError('unsupported dtype: %s' % dtype)
+        raise ValueError('unsupported dtype: %s' % dtype)
 
     def _bp2py(bitpix):  # pylint: disable=too-many-return-statements
         """
@@ -166,20 +165,19 @@ if js9Globals['numpy']:
         """
         if bitpix == 8:
             return 'B'
-        elif bitpix == 16:
+        if bitpix == 16:
             return 'h'
-        elif bitpix == 32:
+        if bitpix == 32:
             return 'l'
-        elif bitpix == 64:
+        if bitpix == 64:
             return 'q'
-        elif bitpix == -32:
+        if bitpix == -32:
             return 'f'
-        elif bitpix == -64:
+        if bitpix == -64:
             return 'd'
-        elif bitpix == -16:
+        if bitpix == -16:
             return 'H'
-        else:
-            raise ValueError('unsupported bitpix: %d' % bitpix)
+        raise ValueError('unsupported bitpix: %d' % bitpix)
 
     def _im2np(im):
         """
@@ -198,7 +196,7 @@ if js9Globals['numpy']:
             else:
                 arr = numpy.array(s, dtype=dtype).reshape((h, w))
         elif js9Globals['retrieveAs'] == 'base64':
-            s = base64.decodestring(im['data'].encode())[0:dlen]
+            s = base64.decodebytes(im['data'].encode())[0:dlen]
             if d > 1:
                 arr = numpy.frombuffer(s, dtype=dtype).reshape((d, h, w))
             else:
@@ -208,7 +206,7 @@ if js9Globals['numpy']:
         return arr
 
 
-class JS9(object):
+class JS9:
     """
     The JS9 class supports communication with an instance of JS9 in a web
     page, utilizing the JS9 Public API calls as class methods.
@@ -310,7 +308,7 @@ class JS9(object):
             obj = {}
         obj['id'] = self.__dict__['id']
 
-        if js9Globals['transport'] == 'html':
+        if js9Globals['transport'] == 'html': # pylint: disable=no-else-return
             host = self.__dict__['host']
             try:
                 url = requests.post(host + '/' + msg, json=obj)
@@ -361,6 +359,9 @@ class JS9(object):
             """
             # get image data from JS9
             im = self.GetImageData(js9Globals['retrieveAs'])
+            # if the image is too large, we can back get an empty string
+            if im == '':
+                raise ValueError('GetImageData failed: image too large for Python transport?')
             # convert to numpy
             arr = _im2np(im)
             # add fits cards
@@ -391,8 +392,7 @@ class JS9(object):
             if not isinstance(hdul, fits.HDUList):
                 if js9Globals['fits'] == 1:
                     raise ValueError('requires astropy.HDUList as input')
-                else:
-                    raise ValueError('requires pyfits.HDUList as input')
+                raise ValueError('requires pyfits.HDUList as input')
             # in-memory string
             memstr = BytesIO()
             # write fits to memory string
@@ -445,6 +445,9 @@ class JS9(object):
             """
             # get image data from JS9
             im = self.GetImageData(js9Globals['retrieveAs'])
+            # if the image is too large, we can get back an empty string
+            if im == '':
+                raise ValueError('GetImageData failed: image too large for Python transport?')
             # convert to numpy
             arr = _im2np(im)
             return arr

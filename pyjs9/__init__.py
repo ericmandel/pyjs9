@@ -36,9 +36,11 @@ js9Globals['version'] = __version__
 # see astropy documentation on write method
 js9Globals['output_verify'] = 'ignore'
 
-# where to retrieve image data from JS9 as an array or as base64 encoded string
-# js9Globals['retrieveAs'] = 'array'
-js9Globals['retrieveAs'] = 'base64'
+# retrieve image data from JS9 as an array or as base64 encoded string
+# in the early days, base64 seemed to be faster
+# js9Globals['retrieveAs'] = 'base64'
+# array allows us to deal with larger images
+js9Globals['retrieveAs'] = 'array'
 
 # load fits, if available
 try:

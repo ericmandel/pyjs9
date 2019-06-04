@@ -311,10 +311,9 @@ class JS9(object):
         obj['id'] = self.__dict__['id']
 
         if js9Globals['transport'] == 'html':
-            jstr = json.dumps(obj)
             host = self.__dict__['host']
             try:
-                url = requests.get(host + '/' + msg, params=jstr)
+                url = requests.post(host + '/' + msg, json=obj)
             except IOError as e:
                 raise IOError('Cannot connect to {0}: {1}'.format(host, e))
             urtn = url.text

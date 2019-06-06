@@ -341,6 +341,16 @@ class JS9:
                 raise ValueError(self.__dict__['sockioResult'])
             return self.__dict__['sockioResult']
 
+    def close(self):
+        """
+        Close the socketio connection and disconnect from the server
+        """
+        if js9Globals['transport'] == 'socketio':
+            try:
+                self.sockio.disconnect()
+            except Exception as e:  # pylint: disable=broad-except
+                logging.error('socketio close failed: %s', e)
+
     if js9Globals['fits']:
         def GetFITS(self):
             """

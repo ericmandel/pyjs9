@@ -3079,6 +3079,33 @@ class JS9:
         """
         return self.send({'cmd': 'SaveCatalog', 'args': args})
 
+    def GetAnalysis(self, *args):
+        """
+        Get server-side analysis task definitions
+
+        call:
+
+        JS9.GetAnalysis()
+
+        The JS9.GetAnalysis() routine returns an array of analysis task
+        definitions, each containing the following information:
+
+        - name: a short identifier string (typically one word)
+        - title: a longer string that will be displayed in the Analysis menu
+        - files: a rule that will be matched against to determine whether this
+        - task is available for the current image
+        - purl: a URL pointing to a web page containing a user parameter form
+        - action: the command to execute on the server side
+        - rtype: return type: text, plot, fits, png, regions, catalog, alert,
+        none
+        - hidden: if true, the analysis task is not shown in the Analysis menu
+
+        Not every property will be present in every task definition
+        (e.g., purl is only present when there is a parameter form).
+        Also note that hidden tasks are not returned by this call.
+        """
+        return self.send({'cmd': 'GetAnalysis', 'args': args})
+
     def RunAnalysis(self, *args):
         """
         Run a simple server-side analysis task

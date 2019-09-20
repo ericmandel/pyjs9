@@ -575,6 +575,60 @@ class JS9:
         """
         return self.send({'cmd': 'Load', 'args': args})
 
+    def LoadWindow(self, *args):
+        """
+        Load an image into a light window or a new (separate) window
+
+        call:
+
+        JS9.LoadWindow(url, opts, type, html, winopts)
+
+        where:
+
+        -  url: remote URL image to load
+        -  opts: object containing image parameters
+        -  type: "light" or "new"
+        -  html: html for the new page (default is menubar, image, colorbar)
+        -  winopts: for "light", optional dhtml window options
+
+        returns:
+
+        -  id: the id of the JS9 display div
+
+        This routine will load an image into a light-weight window or an
+        entirely new window. The url and opts arguments are identical to
+        the standard JS9.Load() call, except that opts can contain:
+
+        -  id: string specifying the id of the JS9 display being created:
+           if no id is specified, a unique id is generated
+        -  clone: the id of a display to clone when creating a light window:
+           the menubar and colorbar will be created if and only if they are
+           present in the cloned display
+
+        The type argument determines whether to create a light-weight
+        window ("light", the default) or a new separate window ("new").
+
+        You can use the html argument to supply different web page elements
+        for the window. Furthermore, if you create a light window, a default
+        set of DynamicDrive dhtmlwindow parameters will be used to make the
+        window the correct size for the default html:
+
+        "width=512px,height=542px,center=1,resize=1,scrolling=1"
+
+        You can supply your own parameters for the new dhtmlwindow using the
+        winOpts argument. See the Dynamic Drive web site:
+
+        http://www.dynamicdrive.com/dynamicindex8/dhtmlwindow/index.htm
+
+        for more information about their light-weight window.
+
+        To create a new light window without loading an image, use:
+
+          >>>> JS9.LoadWindow("", "", "light");
+
+        """
+        return self.send({'cmd': 'LoadWindow', 'args': args})
+
     def LoadProxy(self, *args):
         """
         Load an FITS image link into JS9 using a proxy server
@@ -615,6 +669,39 @@ class JS9:
         """
         return self.send({'cmd': 'LoadProxy', 'args': args})
 
+    def GetStatus(self, *args):
+        """
+        Get Processing Status
+
+        call:
+
+        status  = JS9.GetStatus(id, type)
+
+        where:
+
+        -  id: the id of the file that was loaded into JS9
+        -  type: the type of status
+
+        returns:
+
+        -  status: status of the processing
+
+        This routine returns the status of one of the following specified
+        asynchronous processing types: "Load", "CreateMosaic",
+        "DisplaySection", "LoadCatalog", "LoadRegions", "ReprojectData",
+        "RotateData", "RunAnalysis".
+
+        A status of "complete" means that the image is fully processed. Other
+        statuses include:
+
+        -  processing: the image is being processed
+        -  loading: the image is in process of loading ("Load" only)
+        -  error: image did not load due to an error
+        -  other: another image is loaded into this display
+        -  none: no image is loaded into this display
+        """
+        return self.send({'cmd': 'GetStatus', 'args': args})
+
     def GetLoadStatus(self, *args):
         """
         Get Load Status
@@ -631,9 +718,9 @@ class JS9:
 
         -  status: status of the load
 
-        This routine returns the status of the load process for this image.
-        It is needed in certain cases where JS9.Load() returns before the image
-        data is actially loaded into the display.
+        This routine returns the status of the load of this image.
+        Provided for backward compatibility, it simply calls the more general
+        GetStatus() routine with "Load" as the second argument.
 
         A status of 'complete' means that the image is fully loaded. Other
         statuses include:
@@ -644,6 +731,28 @@ class JS9:
         -  none: no image is loaded into this display
         """
         return self.send({'cmd': 'GetLoadStatus', 'args': args})
+
+    def DisplayImage(self, *args):
+        """
+        Display an image
+
+        call:
+
+        JS9.RefreshImage(step)
+
+        where:
+
+        -  step: starting step to take when displaying the image
+
+        The display steps are: "colors" (remake colors when cmap has changed),
+        "scaled" (rescale data values), "primary" (convert scaled data values
+        to color values), and "display" (write color values to the web page).
+
+        The default step is "primary", which displays the image without
+        recalculating color data, scaled data, etc. This generally is what you
+        want, unless you have changed parameter(s) used in a prior step.
+        """
+        return self.send({'cmd': 'DisplayImage', 'args': args})
 
     def RefreshImage(self, *args):
         """
@@ -797,6 +906,46 @@ class JS9:
         current image.
         """
         return self.send({'cmd': 'GetDisplayData', 'args': args})
+
+    def DisplayPlugin(self, *args):
+        """
+        Display plugin in a light window
+
+        call:
+
+        JS9.DisplayPlugin(plugin)
+
+        where:
+
+        - plugin: name of the plugin
+
+        Toggle the light-window display of the named plugin, as is done
+        by the View and Analysis menus. That is, if the plugin is not
+        visible, make it visible. If the plugin is visible, hide it.
+
+        You can supply the full class and plugin name or just the name, using
+        exact case or lower case, e.g.:
+
+        -  JS9Panner or panner
+        -  JS9Magnifier or magnifier
+        -  JS9Info or info
+        -  JS9Console or console
+        -  DataSourcesArchivesCatalogs or archivescatalogs
+        -  FitsBinning or binning
+        -  ImExamEncEnergy or encenergy
+        -  ImExamPxTabl or pxtabl
+        -  ImExamRadialProj or radialproj
+        -  ImExamHistogram or histogram
+        -  ImExamRegionStats or regionstats
+        -  ImExamXProj or xproj
+        -  ImExamYProj or yproj
+        -  ImExam3dPlot or 3dplot
+        -  ImExamContours or contours
+
+        As with plugins in the View and Analysis menus, this routine does
+        nothing if the plugin is explicitly defined on the web page.
+        """
+        return self.send({'cmd': 'DisplayPlugin', 'args': args})
 
     def DisplayExtension(self, *args):
         """
@@ -1662,6 +1811,44 @@ class JS9:
         """
         return self.send({'cmd': 'SetScale', 'args': args})
 
+    def GetFlip(self, *args):
+        """
+        Get flip state of an image
+
+        call:
+
+        flip  = JS9.GetFlip()
+
+        returns:
+
+        -  flip: current flip state
+
+        Possible returned flip states are: "x", "y", "xy", or "none".
+        """
+        return self.send({'cmd': 'GetFlip', 'args': args})
+
+    def SetFlip(self, *args):
+        """
+        Flip an image around an axis
+
+        call:
+
+        JS9.SetFlip(flip)
+
+        where:
+
+        -  flip: "x", "y", "xy", "none"
+
+        Flip an image around the specified axis. WCS header parameters will be
+        updated appropriately. Note that you might have to reset the pan
+        position after flipping.
+
+        The image is flipped using the CFITSIO fits_copy_image_section()
+        routine, so this function is available only for FITS files (not
+        PNG/JPEG).
+        """
+        return self.send({'cmd': 'SetFlip', 'args': args})
+
     def GetParam(self, *args):
         """
         Get an image parameter value
@@ -1710,7 +1897,7 @@ class JS9:
         - wcsalign: true, align image using wcs after reproj?
         - xeqonchange: true, xeq an onchange callback after a region change?
         - zscalecontrast: 0.25, default zscale value from ds9
-        - zscalesamples: 600,	default zscale value from ds9
+        - zscalesamples: 600, default zscale value from ds9
         - zscaleline: 120, default zscale value from ds9
 
         The routine returns the previous value of the parameter, which can
@@ -1991,6 +2178,25 @@ class JS9:
         optical images, image and physical coordinate usually are identical.
         """
         return self.send({'cmd': 'SetWCSSys', 'args': args})
+
+    def DisplayMessage(self, *args):
+        """
+        Display a text message
+
+        call:
+
+        JS9.DisplayMessage(which, text)
+
+        where:
+
+        - which: "info" or "regions"
+        - text: text to display
+
+        The text string is displayed in the "info" area (usually occupied by the
+        valpos display) or the "region" area (where regions are displayed). The
+        empty string will clear the previous message.
+        """
+        return self.send({'cmd': 'DisplayMessage', 'args': args})
 
     def DisplayCoordGrid(self, *args):
         """
@@ -2513,6 +2719,29 @@ class JS9:
         """
         return self.send({'cmd': 'ReprojectData', 'args': args})
 
+    def RotateData(self, *args):
+        """
+        Rotate an image around the WCS CRPIX point
+
+        call:
+
+        JS9.RotateData(angle, opts)
+
+        where:
+
+        - angle: rotation angle in degrees
+        - opts: options object
+
+        The JS9.RotateData() routine uses JS9.ReprojectData() to rotate
+        image data by the specified angle (in degrees). If the string
+        "northup" or "northisup" is specified, the rotation angle is set to 0.
+        The rotation is performed about the WCS CRPIX1, CRPIX2 point.
+
+        The optional opts object is passed directly to the JS9.ReprojectData()
+        routine. See JS9.ReprojectData() above for more information.
+        """
+        return self.send({'cmd': 'RotateData', 'args': args})
+
     def SaveSession(self, *args):
         """
         Save an image session to a file
@@ -2750,6 +2979,19 @@ class JS9:
 
         -  layer: name of layer
         -  shapes: which shapes to remove
+
+        If the shapes argument is not specified, it defaults to "all". You
+        can specify a selector using any of the following:
+
+        -  all: all shapes not including child text shapes
+        -  All: all shapes including child text shapes
+        -  selected: the selected shape (or shapes in a selected group)
+        -  [color]: shapes of the specified color
+        -  [shape]: shapes of the specified shape
+        -  [tag]:  shapes having the specified tag
+        -  /[regexp]/: shapes with a tag matching the specified regexp
+        -  child: a child shape (i.e. text child of another shape)
+        -  parent: a shape that has a child (i.e. has a text child)
         """
         return self.send({'cmd': 'RemoveShapes', 'args': args})
 
@@ -2807,6 +3049,19 @@ class JS9:
         Change one or more shapes. The opts object can contain the parameters
         described in the JS9.AddShapes() section. However, you cannot (yet)
         change the shape itself (e.g. from 'box' to 'circle').
+
+        If the shapes argument is not specified, it defaults to "all". You
+        can specify a selector using any of the following:
+
+        -  all: all shapes not including child text shapes
+        -  All: all shapes including child text shapes
+        -  selected: the selected shape (or shapes in a selected group)
+        -  [color]: shapes of the specified color
+        -  [shape]: shapes of the specified shape
+        -  [tag]:  shapes having the specified tag
+        -  /[regexp]/: shapes with a tag matching the specified regexp
+        -  child: a child shape (i.e. text child of another shape)
+        -  parent: a shape that has a child (i.e. has a text child)
         """
         return self.send({'cmd': 'ChangeShapes', 'args': args})
 
@@ -2928,8 +3183,52 @@ class JS9:
         described in the JS9.AddRegions() section. However, you cannot (yet)
         change the shape itself (e.g. from 'box' to 'circle'). See
         js9onchange.html for examples of how to use this routine.
+
+        If the regions argument is not specified, it defaults to "all". You
+        can specify a region selector using any of the following:
+
+        -  all: all regions not including child text regions
+        -  All: all regions including child text regions
+        -  selected: the selected region (or regions in a selected group)
+        -  [color]: regions of the specified color
+        -  [shape]: regions of the specified shape
+        -  [tag]:  regions having the specified tag
+        -  /[regexp]/: regions with a tag matching the specified regexp
+        -  child: a child region (i.e. text child of another region)
+        -  parent: a region that has a child (i.e. has a text child)
         """
         return self.send({'cmd': 'ChangeRegions', 'args': args})
+
+    def CopyRegions(self, *args):
+        """
+        Copy one or more regions to another image
+
+        call:
+
+        JS9.CopyRegions(to, regions)
+
+        where:
+
+        -  to: image id to which to copy regions
+        -  regions: which regions to copy
+
+        Copy regions to a different image. If to is "all", then the
+        regions are copied to all images.
+
+        If the regions argument is not specified, it defaults to "all". You
+        can specify a region selector using any of the following:
+
+        -  all: all regions not including child text regions
+        -  All: all regions including child text regions
+        -  selected: the selected region (or regions in a selected group)
+        -  [color]: regions of the specified color
+        -  [shape]: regions of the specified shape
+        -  [tag]:  regions having the specified tag
+        -  /[regexp]/: regions with a tag matching the specified regexp
+        -  child: a child region (i.e. text child of another region)
+        -  parent: a region that has a child (i.e. has a text child)
+        """
+        return self.send({'cmd': 'CopyRegions', 'args': args})
 
     def RemoveRegions(self, *args):
         """
@@ -2942,8 +3241,38 @@ class JS9:
         where:
 
         -  regions: which regions to remove
+
+        If the regions argument is not specified, it defaults to "all". You
+        can specify a region selector using any of the following:
+
+        -  all: all regions not including child text regions
+        -  All: all regions including child text regions
+        -  selected: the selected region (or regions in a selected group)
+        -  [color]: regions of the specified color
+        -  [shape]: regions of the specified shape
+        -  [tag]:  regions having the specified tag
+        -  /[regexp]/: regions with a tag matching the specified regexp
+        -  child: a child region (i.e. text child of another region)
+        -  parent: a region that has a child (i.e. has a text child)
         """
         return self.send({'cmd': 'RemoveRegions', 'args': args})
+
+    def UnremoveRegions(self, *args):
+        """
+        Unremove one or more previously removed regions
+
+        call:
+
+        JS9.RemoveRegions()
+
+        If you accidentally remove one or more regions, you can use restore
+        them using this call. JS9 maintains a stack of removed regions (of
+        size JS9.globalOpts.unremoveReg, current default is 100). Each
+        time one or more regions is removed, they are stored as a single entry
+        on this stack. The UnremoveRegions call pops the last entry off
+        the stack and calls AddRegions.
+        """
+        return self.send({'cmd': 'UnremoveRegions', 'args': args})
 
     def SaveRegions(self, *args):
         """

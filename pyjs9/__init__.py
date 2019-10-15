@@ -1829,7 +1829,7 @@ class JS9:
 
     def SetFlip(self, *args):
         """
-        Flip an image around an axis
+        Flip an image around the x or y axis
 
         call:
 
@@ -1837,17 +1837,48 @@ class JS9:
 
         where:
 
-        -  flip: "x", "y", "xy", "none"
+        -  flip: "x", "y"
 
         Flip an image around the specified axis. WCS header parameters will be
         updated appropriately. Note that you might have to reset the pan
         position after flipping.
-
-        The image is flipped using the CFITSIO fits_copy_image_section()
-        routine, so this function is available only for FITS files (not
-        PNG/JPEG).
         """
         return self.send({'cmd': 'SetFlip', 'args': args})
+
+    def GetRot90(self, *args):
+        """
+        Get the rotate state of an image
+
+        call:
+
+        flip = JS9.GetRot90()
+
+        returns:
+
+        -  rot:  current rotation value for this image
+
+        The returned rotation value will be a multiple of 90, depending on
+        how many rotations have been executed and in which direction.
+        """
+        return self.send({'cmd': 'GetRot90', 'args': args})
+
+    def SetRot90(self, *args):
+        """
+        Rotate an image by +/- 90 degrees
+
+        call:
+
+        JS9.SetRot90(rot)
+
+        where:
+
+        -  rot: +/- 90
+
+        Rotate an image by a multiple of 90 degrees. The WCS header
+        parameters will be updated appropriately. Note that you might
+        have to reset the pan position after rotating.
+        """
+        return self.send({'cmd': 'SetRot90', 'args': args})
 
     def GetParam(self, *args):
         """

@@ -1359,6 +1359,77 @@ class JS9:
         """
         return self.send({'cmd': 'UnsyncImages', 'args': args})
 
+    def MaskImage(self, *args):
+        """
+        Mask an image using values in another image
+
+        call:
+
+        JS9.MaskImage(image, opts)
+
+        calling sequences:
+
+        JS9.MaskImage()              # return current mask params
+        JS9.MaskImage(true||false)   # turn on/off masking
+        JS9.MaskImage(image, opts)   # set mask and optionally, its params
+        JS9.MaskImage(opts)          # set mask params
+
+        where:
+
+        - image: image handle or image id to use as a mask
+        - opts: optional mask properties
+
+        and where the mask properties are:
+
+        - mode: "mask" or "overlay"
+        - value: mask value that triggers masking (def: 0) for "mask" mode
+        - invert: whether to invert the mask (def: false) for "mask" mode
+        - def: object containing default RGBA values for "overlay" mode
+        - opacity: opacity when masking (def: 0, range 0 to 1) for both mode
+
+        The pixel values in one image can be used to mask the pixels in
+        another image if the two images have the same image dimensions.
+        The type of masking depends on the mode: "overlay" (default) or "mask".
+
+        For "mask" mode, if the value of a pixel in the mask is less than or
+        equal to the value property, the opacity of the displayed pixel
+        is set to the opacity property. You can also invert the mask
+        using the invert property. In effect, this mode displays only
+        the image pixels "covered" by a mask.
+
+        For "overlay" mode, if the mask pixel has a non-zero alpha, its color
+        is blended with the image pixel using source-atop composition.
+        Otherwise, the image pixel color alone is used in the display.
+        This is one way you can display a mask overlay on top of an image.
+        A static colormap is usually used in conjunction with an overlay
+        mask, since pixel values not explicitly assigned a color are
+        transparent.  Note that, when blending a mask and image pixel, the
+        global mask opacity and the individual pixel opacity are multiplied to
+        get the final pixel opacity.
+
+        To set up a mask initially, call the routine with an already-loaded
+        mask image as the first parameter, and an optional opts object as the
+        second parameter:
+
+        >>> # default is "overlay"
+        >>> JS9.ImageMask("casa_mask.fits");
+        >>> JS9.ImageMask("casa_mask.fits", {mode: "overlay"});
+
+        >>> # "mask" mode: set lower threshold for masking and masked opacity
+        >>> JS9.ImageMask("mask.fits",{"mode":"mask","value":5,"opacity":0.2});
+
+        You can change the mask parameters at any time:
+
+        >>> JS9.ImageMask({value: 2, opacity: 0});
+
+        or temporarily turn off and on the mask:
+
+        >>> JS9.ImageMask(false);
+        >>> ...
+        >>> JS9.ImageMask(true);
+        """
+        return self.send({'cmd': 'MaskImage', 'args': args})
+
     def BlendDisplay(self, *args):
         """
         Set global blend mode for specified display
@@ -1405,15 +1476,50 @@ class JS9:
 
         JS9.SetColormap(cmap, [contrast, bias])
 
+        calling sequences:
+
+        JS9.SetColormap(colormap)
+        JS9.SetColormap(colormap, contrast, bias)
+        JS9.SetColormap(colormap, staticOpts)
+        JS9.SetColormap(contrast, bias)
+        JS9.SetColormap(staticOpts)
+
         where:
 
         -  cmap: colormap name
         -  contrast: contrast value (range: 0 to 10)
         -  bias: bias value (range 0 to 1)
+        -  staticOpts: static colormap opts
 
         Set the current colormap, contrast/bias, or both. This call takes one
         (colormap), two (contrast, bias) or three (colormap, contrast, bias)
-        arguments.
+        arguments. It also takes the following single arguments:
+
+        - rgb: toggle RGB mode
+        - invert: toggle inversion of the colormap
+        - reset: reset contrast, bias, and invert values
+        - staticOpts: opts for a static colormap
+
+        The staticOpts argument is an array of parameters to change
+        in a static colormap. Each parameter can take one of two forms:
+
+        - [color, min, max]
+        - [color, opacity|alpha]
+        - [color, true|false]
+
+        The color parameter must match one of the colors specified when
+        the static colormap was created. The min and max properties replace
+        the originally specified min and max values. Specifying a number
+        between 0 and 1 (inclusive) will change the opacity, while specifying
+        a number greater than 1 will change the alpha (i.e., opacity * 255).
+        Specifying true or false will set or unset the active flag for that
+        color, i.e.  it will turn on or off use of that color. When turned off,
+        the pixels in that range will be transparent. For example:
+
+        >>> SetColormap '[["red", 0.5], ["green", true], ["blue", false]]'
+
+        sets the opacity of red pixels to 0.5, turns on the green pixels,
+        and turns off the blue pixels in the currently active static colormap.
         """
         return self.send({'cmd': 'SetColormap', 'args': args})
 

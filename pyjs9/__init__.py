@@ -1779,6 +1779,67 @@ class JS9:
         """
         return self.send({'cmd': 'SetRGBMode', 'args': args})
 
+    def GetOpacity(self, *args):
+        """
+        Get the image opacity
+
+        call:
+
+        opacity  = JS9.GetOpacity()
+
+        returns:
+
+        -  opacity: opacity object
+
+        The returned opacity object will contain the following properties:
+
+        - opacity: opacity value assigned to image pixels
+        - flooropacity: opacity assigned when the image pixel value is
+           less than or equal to the floor value (if defined)
+        - floorvalue: floor value to test image pixel values against
+           (if defined)
+        """
+        return self.send({'cmd': 'GetOpacity', 'args': args})
+
+    def SetOpacity(self, *args):
+        """
+        Set the image opacity
+
+        calling sequences:
+
+        JS9.SetOpacity(opacity)      # set default opacity for all image pixels
+        JS9.SetOpacity(fvalue, fopacity) # pixels <= fvalue use fopacity
+        JS9.SetOpacity(opacity, fvalue, fopacity)  # set def and floor opacity
+        JS9.SetOpacity("reset")      # reset default opacity to 1
+        JS9.SetOpacity("resetfloor") # remove opacity floor
+        JS9.SetOpacity("resetall")   # reset def opacity to 1, remove floor
+
+        where:
+
+	 - opacity: opacity value for image pixels
+	 - floorvalue: floor value to test image pixel values against
+	 - flooropacity: floor opacity value to set
+
+        Set the current opacity, floor opacity, or both. This call takes one
+        (opacity), two (floorvalue, flooropacity) or three (opacity,
+        floorvalue, flooropacity) arguments.
+
+        The floor value & opacity option allows you to set the opacity
+        for pixels whose image value is less then or equal to a specified
+        floor value. It takes two arguments: the floor pixel value to check,
+        and the floor opacity to apply. For example, when both arguments are 0,
+        pixels whose image values are less than or equal to 0
+        will be transparent. Specifying 5 and 0.5, respectively, means that
+        pixels whose image values less than or equal to 5 will have an opacity
+        of 0.5. A useful case is to make the pixels transparent at a
+        given value, allowing features of one image to be blended into
+        another, without blending extraneous pixels.
+
+        The various reset options allow you to reset the default value,
+        floor values, or both.
+        """
+        return self.send({'cmd': 'SetOpacity', 'args': args})
+
     def GetZoom(self, *args):
         """
         Get the image zoom factor

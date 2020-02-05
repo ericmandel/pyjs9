@@ -1381,7 +1381,7 @@ class JS9:
 
         and where the mask properties are:
 
-        - mode: "mask" or "overlay"
+        - mode: "mask", "opacity", or "overlay"
         - value: mask value that triggers masking (def: 0) for "mask" mode
         - invert: whether to invert the mask (def: false) for "mask" mode
         - def: object containing default RGBA values for "overlay" mode
@@ -1396,6 +1396,10 @@ class JS9:
         is set to the opacity property. You can also invert the mask
         using the invert property. In effect, this mode displays only
         the image pixels "covered" by a mask.
+
+        For "opacity" mode, each image pixel is assigned an opacity equal
+        to the value of the mask pixel (whose values are assumed to range
+        from 0 to 1.)
 
         For "overlay" mode, if the mask pixel has a non-zero alpha, its color
         is blended with the image pixel using source-atop composition.

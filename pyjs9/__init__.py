@@ -359,7 +359,7 @@ class JS9:
             To read FITS data or a raw array from js9 into fits, use the
             'GetFITS' method. It takes no args and returns an hdu list::
 
-              >>> hdul = d.GetFITS()
+              >>> hdul = j.GetFITS()
               >>> hdul.info()
               Filename: StringIO.StringIO
               No.    Name         Type      Cards   Dimensions   Format
@@ -447,7 +447,7 @@ class JS9:
 
               >>> j.get('file')
               '/home/eric/data/casa.fits[EVENTS]'
-              >>> arr = d.GetNumpy()
+              >>> arr = j.GetNumpy()
               >>> arr.shape
               (1024, 1024)
               >>> arr.dtype
@@ -4252,6 +4252,12 @@ class JS9:
         Returned results are of type string: 'grey, red, ...'
         """
         return self.send({'cmd': 'colormaps', 'args': args})
+
+    def helper(self, *args):
+        """
+        get helper info
+        """
+        return self.send({'cmd': 'helper', 'args': args})
 
     def image(self, *args):
         """

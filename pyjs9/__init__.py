@@ -3267,6 +3267,26 @@ class JS9:
         """
         return self.send({'cmd': 'ChangeShapes', 'args': args})
 
+    def CopyShapes(self, *args):
+        """
+        Copy a shape layer to another image
+
+        call:
+
+        JS9.CopyShapes(to, layer)
+
+        where:
+
+        -  to: image id to which to copy shapes
+        -  layer: shape layer to copy
+
+        Copy regions to a different image. If to is "all", then the
+        regions are copied to all images.
+
+        All shapes in the shape layer are copied to the new image.
+        """
+        return self.send({'cmd': 'CopyShapes', 'args': args})
+
     def AddRegions(self, *args):
         """
         Add one or more regions to the regions layer

@@ -3388,6 +3388,39 @@ class JS9:
         """
         return self.send({'cmd': 'GetRegions', 'args': args})
 
+    def ListRegions(self, *args):
+        """
+        List one or more regions
+
+        call:
+
+        JS9.ListRegions(regions, opts)
+
+        where:
+
+        -  regions: which regions to list
+        -  opts: object containing options
+
+        List (and return) the specified regions. By default, a light window
+        is displayed listing all regions (i.e., as if the list option of the
+        Regions menu had been selected.) You can also list "selected" regions
+        or use any of the standard regions specifications.
+
+        The opts object supports the following properties:
+        -  mode: display/return mode (1,2,3)
+        -  wcssys: wcs system to use (ICRS, FK5, galactic, physical, etc.)
+        -  wcsunits: units for wcs output (sexagesimal, degrees, pixels)
+        -  includejson: include JSON object
+        -  includecomments: include comments
+        -  layer: which layer to display (default is regions layer)
+
+        The mode property accepts the following values:
+        -  1: no display, return full region string including json, comments
+        -  2: display and return shortened region string (no json, comments)
+        -  3: display and return full region string (including json, comments)
+        """
+        return self.send({'cmd': 'ListRegions', 'args': args})
+
     def ChangeRegions(self, *args):
         """
         Change one or more regions
@@ -3508,23 +3541,23 @@ class JS9:
 
         - filename: output file name
         - which: which regions to save (default is "all")
-            - layer: which layer save (default is "regions")
+        - layer: which layer save (default is "regions")
 
         Save the current regions for the displayed image as JS9 regions file.
         If filename is not specified, the file will be saved as "js9.reg".
 
-            Don't forget that the file is saved by the browser, in whatever
-            location you have set up for downloads.
+        Don't forget that the file is saved by the browser, in whatever
+        location you have set up for downloads.
 
-            If the which argument is not specified, it defaults to "all". You
-            can specify "selected" to return information about the selected
-            regions, or a tag value to save regions having that tag.
+        If the which argument is not specified, it defaults to "all". You
+        can specify "selected" to return information about the selected
+        regions, or a tag value to save regions having that tag.
 
-            If the layer argument is not specified, it defaults to "regions",
-            i.e.  the usual regions layer. You can specify a different layer,
-            e.g., if you want to save a catalog layer as a region file
-            (since SaveCatalog() will save the data in table format instead
-            of as regions).
+        If the layer argument is not specified, it defaults to "regions",
+        i.e.  the usual regions layer. You can specify a different layer,
+        e.g., if you want to save a catalog layer as a region file
+        (since SaveCatalog() will save the data in table format instead
+        of as regions).
         """
         return self.send({'cmd': 'SaveRegions', 'args': args})
 
@@ -4148,6 +4181,31 @@ class JS9:
         the new id using the {display: "id"} syntax.
         """
         return self.send({'cmd': 'RenameDisplay', 'args': args})
+
+    def RemoveDisplay(self, *args):
+        """
+        Close all images in a display and remove the display
+
+        call:
+
+        JS9.RemoveDisplay(dname)
+
+        where:
+
+        - dname:  name of JS9 display to remove
+
+        This routine will close all images in the specified display and then
+        remove the display. It is available for displays contained in
+        light windows and for displays contained in JS9 Grid Containers. When
+        removing the display inside a light window, the light window is
+        immediately closed without a confirmation dialog box (unlike a light
+        window being closed via its <b>close</b> button.) For a display inside
+        a JS9 Grid Container, the display is removed from the DOM, so that it
+        no longer is part of the grid layout. Note, however, that you cannot
+        remove all displays from a grid container: at least one display must be
+        left in the container.
+        """
+        return self.send({'cmd': 'RemoveDisplay', 'args': args})
 
     def DisplayHelp(self, *args):
         """

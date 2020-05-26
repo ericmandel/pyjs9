@@ -3421,6 +3421,25 @@ class JS9:
         """
         return self.send({'cmd': 'ListRegions', 'args': args})
 
+    def EditRegions(self, *args):
+        """
+        Edit one or more regions
+
+        call:
+
+        JS9.EditRegions()
+
+        Edit one or more selected regions using an Edit dialog box. If a
+        single region has been selected by clicking that region, all of its
+        properties can be edited via the displayed dialog box. If a group of
+        regions has been selected using Meta-mousemove to highlight one or
+        more regions, then properties such as color, stroke width, dash
+        pattern, and tags can be edited for all of the selected regions using
+        the displayed dialog box. In the latter case, use shift-click to add
+        additional regions to the edit group.
+        """
+        return self.send({'cmd': 'EditRegions', 'args': args})
+
     def ChangeRegions(self, *args):
         """
         Change one or more regions

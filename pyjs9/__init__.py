@@ -3580,6 +3580,63 @@ class JS9:
         """
         return self.send({'cmd': 'SaveRegions', 'args': args})
 
+    def ChangeRegionTags(self, *args):
+        """
+	Change region tags for the specified image(s)
+
+        call:
+
+        JS9.ChangeRegionTags(which, addreg, removereg)
+
+        where:
+
+        - which: which regions to process (default is 'all')
+	- addreg: array or comma-delimited string of regions to add
+	- removereg: array or comma-delimited string of regions to remove
+
+	While region tags can be changed wholesale using JS9.ChangeRegions(),
+	this routine allows you to add and/or remove specific tags. The first
+	argument specifies which regions to change. The second argument is a
+	list of tags to add, while the third argument is a list of tags to
+	remove. In each case, the tags argument can be an array of tag strings
+	or a single string containing a comma-separated list of tags:
+
+	>>> JS9.ChangeRegionTags('selected', ['foo1', 'foo2'], ['goo1']);
+	>>> JS9.ChangeRegionTags('selected', 'foo1,foo2', 'goo1');
+
+        """
+        return self.send({'cmd': 'ChangeRegionTags', 'args': args})
+
+    def ToggleRegionTags(self, *args):
+        """
+	Toggle two region tags for the specified image(s)
+
+        call:
+
+        JS9.toggleRegionTags(which, tag1, tag2)
+
+        where:
+
+        - which: which regions to process (default is 'all')
+	- tag1: tag #1 to toggle
+	- tag2: tag #2 to toggle
+
+	While region tags can be changed wholesale using JS9.ChangeRegions(),
+	this routine allows you to toggle between two tags, e.g., a source
+	region and background region, or include and exclude. For example:
+
+	>>> JS9.ToggleRegionTags('selected', 'source', 'background');
+
+	will change a background region into a source region
+	or vice-versa, depending on the state of the region, while:
+
+	>>> JS9.ToggleRegionTags('selected', 'include', 'exclude');
+
+	will toggle between include and exclude.
+
+        """
+        return self.send({'cmd': 'ToggleRegionTags', 'args': args})
+
     def LoadRegions(self, *args):
         """
         Load regions from a file into the current image

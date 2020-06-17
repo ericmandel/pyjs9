@@ -3058,6 +3058,10 @@ class JS9:
         Shape layers can be hidden from display. This could be useful, for
         example, if you have several catalogs loaded into a display and want to
         view one at a time.
+
+        If mode is true, a previously hidden shape layer will be displayed. If
+        mode is false, a displayed shape layer will be hidden. If the
+        mode argument is not supplied, the current mode is returned.
         """
         return self.send({'cmd': 'ShowShapeLayer', 'args': args})
 
@@ -4275,7 +4279,7 @@ class JS9:
         light windows and for displays contained in JS9 Grid Containers. When
         removing the display inside a light window, the light window is
         immediately closed without a confirmation dialog box (unlike a light
-        window being closed via its <b>close</b> button.) For a display inside
+        window being closed via its close button.) For a display inside
         a JS9 Grid Container, the display is removed from the DOM, so that it
         no longer is part of the grid layout. Note, however, that you cannot
         remove all displays from a grid container: at least one display must be
@@ -4322,9 +4326,8 @@ class JS9:
         Display arbitrary content inside a light window. There are any number
         of light window routines available on the Net. JS9 uses light window
         routines developed by Dynamic Drive (http://www.dynamicdrive.com).
-        Their extensive documentation can be found
-        <a href="http://www.dynamicdrive.com/dynamicindex8/dhtmlwindow/">
-        here</a>.
+        Extensive documentation can be found on the Dynamic Drive web
+        site: http://www.dynamicdrive.com/dynamicindex8/dhtmlwindow.
 
         The content shown inside the window depends on the content parameter:
 

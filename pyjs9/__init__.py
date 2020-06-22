@@ -2010,11 +2010,49 @@ class JS9:
 
         -  flip: "x", "y"
 
-        Flip an image around the specified axis. WCS header parameters will be
-        updated appropriately. Note that you might have to reset the pan
-        position after flipping.
+        Flip an image around the specified axis.
+
+        Since this operation is applied to the entire display canvas instead
+        of the image, image parameters such as the WCS are not affected. Note
+        that you might have to reset the pan position after rotating.
         """
         return self.send({'cmd': 'SetFlip', 'args': args})
+
+    def GetRot(self, *args):
+        """
+        Get the rotate state of an image
+
+        call:
+
+        flip = JS9.GetRot()
+
+        returns:
+
+        -  rot:  current rotation value for this image
+
+        Return the current rotation.
+        """
+        return self.send({'cmd': 'GetRot', 'args': args})
+
+    def SetRot(self, *args):
+        """
+        Rotate an image by a specified number of degrees
+
+        call:
+
+        JS9.SetRot(rot)
+
+        where:
+
+        -  rot: rotation in degrees
+
+        Rotate an image the specified number of degrees.
+
+        Since this operation is applied to the entire display canvas instead
+        of the image, image parameters such as the WCS are not affected. Note
+        that you might have to reset the pan position after rotating.
+        """
+        return self.send({'cmd': 'SetRot', 'args': args})
 
     def GetRot90(self, *args):
         """
@@ -2045,9 +2083,11 @@ class JS9:
 
         -  rot: +/- 90
 
-        Rotate an image by a multiple of 90 degrees. The WCS header
-        parameters will be updated appropriately. Note that you might
-        have to reset the pan position after rotating.
+        Rotate an image the specified number of degrees.
+
+        Since this operation is applied to the entire display canvas instead
+        of the image, image parameters such as the WCS are not affected. Note
+        that you might have to reset the pan position after rotating.
         """
         return self.send({'cmd': 'SetRot90', 'args': args})
 

@@ -2018,13 +2018,13 @@ class JS9:
         """
         return self.send({'cmd': 'SetFlip', 'args': args})
 
-    def GetRotation(self, *args):
+    def GetRotate(self, *args):
         """
         Get the rotate state of an image
 
         call:
 
-        flip = JS9.GetRotation()
+        flip = JS9.GetRotate()
 
         returns:
 
@@ -2032,15 +2032,15 @@ class JS9:
 
         Return the current rotation.
         """
-        return self.send({'cmd': 'GetRotation', 'args': args})
+        return self.send({'cmd': 'GetRotate', 'args': args})
 
-    def SetRotation(self, *args):
+    def SetRotate(self, *args):
         """
         Rotate an image by a specified number of degrees
 
         call:
 
-        JS9.SetRotation(rot)
+        JS9.SetRotate(rot)
 
         where:
 
@@ -2052,7 +2052,7 @@ class JS9:
         of the image, image parameters such as the WCS are not affected. Note
         that you might have to reset the pan position after rotating.
         """
-        return self.send({'cmd': 'SetRotation', 'args': args})
+        return self.send({'cmd': 'SetRotate', 'args': args})
 
     def GetRot90(self, *args):
         """

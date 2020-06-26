@@ -2010,11 +2010,12 @@ class JS9:
 
         -  flip: "x", "y"
 
-        Flip an image around the specified axis.
+        Flip an image around the specified axis. Flipping is relative to the
+        current state of the display, so flipping by x twice will return you
+        to the original orientation.
 
         Since this operation is applied to the entire display canvas instead
-        of the image, image parameters such as the WCS are not affected. Note
-        that you might have to reset the pan position after rotating.
+        of the image, image parameters such as the WCS are not affected.
         """
         return self.send({'cmd': 'SetFlip', 'args': args})
 
@@ -2046,11 +2047,13 @@ class JS9:
 
         -  rot: rotation in degrees
 
-        Rotate an image the specified number of degrees.
+        Set the rotation of an image to the specified number of degrees. The
+        rotation is performed in terms of an absolute angle: if you rotate by
+        20 degrees and then do it again, there is no change. Also, setting the
+        rotation to 0 sets the angle to 0.
 
         Since this operation is applied to the entire display canvas instead
-        of the image, image parameters such as the WCS are not affected. Note
-        that you might have to reset the pan position after rotating.
+        of the image, image parameters such as the WCS are not affected.
         """
         return self.send({'cmd': 'SetRotate', 'args': args})
 
@@ -2083,11 +2086,12 @@ class JS9:
 
         -  rot: +/- 90
 
-        Rotate an image the specified number of degrees.
+        Rotate an image by a multiple of 90 degrees. Rot90 rotations are
+        relative to the current state of the display, so four rotations will
+        return you to the original orientation.
 
         Since this operation is applied to the entire display canvas instead
-        of the image, image parameters such as the WCS are not affected. Note
-        that you might have to reset the pan position after rotating.
+        of the image, image parameters such as the WCS are not affected.
         """
         return self.send({'cmd': 'SetRot90', 'args': args})
 

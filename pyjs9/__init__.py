@@ -4095,6 +4095,25 @@ class JS9:
         """
         return self.send({'cmd': 'Print', 'args': args})
 
+    def DisplayNextImage(self, *args):
+        """
+        Display the Next (or Previous) Image
+
+        call:
+
+        JS9.DisplayNextImage(n)
+
+        where:
+
+        - n: number of images beyond (or prior to) the one currently displayed
+
+        The JS9.DisplayNextImage() routine displays the nth image in
+        the display's image list beyond the currently displayed image. The
+        default value for n is 1. You can supply a negative number to
+        display an image prior to the current one in the display's image list.
+        """
+        return self.send({'cmd': 'DisplayNextImage', 'args': args})
+
     def CreateMosaic(self, *args):
         """
         Create a Mosaic Image

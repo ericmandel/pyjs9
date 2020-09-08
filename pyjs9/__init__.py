@@ -25,7 +25,7 @@ pyjs9.py connects Python and JS9 via the JS9 (back-end) helper
 """
 
 # pyjs9 version
-__version__ = '3.0'
+__version__ = '3.1'
 
 # try to be a little bit neat with global parameters
 js9Globals = {}
@@ -3238,6 +3238,7 @@ class JS9:
         -  selected: the selected shape (or shapes in a selected group)
         -  [color]: shapes of the specified color
         -  [shape]: shapes of the specified shape
+        -  [wcs]:  shapes whose initial wcs matches the specified wcs
         -  [tag]:  shapes having the specified tag
         -  /[regexp]/: shapes with a tag matching the specified regexp
         -  child: a child shape (i.e. text child of another shape)
@@ -3308,6 +3309,7 @@ class JS9:
         -  selected: the selected shape (or shapes in a selected group)
         -  [color]: shapes of the specified color
         -  [shape]: shapes of the specified shape
+        -  [wcs]:  shapes whose initial wcs matches the specified wcs
         -  [tag]:  shapes having the specified tag
         -  /[regexp]/: shapes with a tag matching the specified regexp
         -  child: a child shape (i.e. text child of another shape)
@@ -3334,6 +3336,47 @@ class JS9:
         All shapes in the shape layer are copied to the new image.
         """
         return self.send({'cmd': 'CopyShapes', 'args': args})
+
+    def SelectShapes(self, *args):
+        """
+        Group Shapes into a Selection
+
+        call:
+
+        JS9.SelectShapes(layer, shapes)
+
+        where:
+
+        -  layer: shape layer
+        -  shapes: which shapes to select
+
+        JS9 has a rich mouse-based interface for selecting shapes: a single
+        shape is selected by clicking on it. A number of shapes can be
+        gathered into a group selection by pressing the left mouse button and
+        dragging the mouse over the desired shapes. To add to an
+        already-existing selection, shift-click the mouse on a shape.
+
+        This routine allows you to create a group selection programmatically by
+        specifying which shapes make up the selection.
+
+        If the shapes argument is not specified, it defaults to "all". You
+        can specify a selector using any of the following:
+
+        -  all: all shapes not including child text shapes
+        -  All: all shapes including child text shapes
+        -  selected: the selected shape (or shapes in a selected group)
+        -  [color]: shapes of the specified color
+        -  [shape]: shapes of the specified shape
+        -  [wcs]:  shapes whose initial wcs matches the specified wcs
+        -  [tag]:  shapes having the specified tag
+        -  /[regexp]/: shapes with a tag matching the specified regexp
+        -  child: a child shape (i.e. text child of another shape)
+        -  parent: a shape that has a child (i.e. has a text child)
+
+        The result of the call will be a selected group which can be moved
+        as one unit.
+        """
+        return self.send({'cmd': 'SelectShapes', 'args': args})
 
     def AddRegions(self, *args):
         """
@@ -3409,6 +3452,8 @@ class JS9:
 
         -  rarr: array of region objects
 
+        If the regions argument is not specified, it defaults to
+        "selected" if there are selected regions, otherwise "all".
         Each returned region object contains the following properties:
 
         -  id: numeric region id (assigned by JS9 automatically)
@@ -3506,14 +3551,16 @@ class JS9:
         change the shape itself (e.g. from 'box' to 'circle'). See
         js9onchange.html for examples of how to use this routine.
 
-        If the regions argument is not specified, it defaults to "all". You
-        can specify a region selector using any of the following:
+        If the regions argument is not specified, it defaults to
+        "selected" if there are selected regions, otherwise "all".
+        You can specify a region selector using any of the following:
 
         -  all: all regions not including child text regions
         -  All: all regions including child text regions
         -  selected: the selected region (or regions in a selected group)
         -  [color]: regions of the specified color
         -  [shape]: regions of the specified shape
+        -  [wcs]:  regions whose initial wcs matches the specified wcs
         -  [tag]:  regions having the specified tag
         -  /[regexp]/: regions with a tag matching the specified regexp
         -  child: a child region (i.e. text child of another region)
@@ -3537,14 +3584,16 @@ class JS9:
         Copy regions to a different image. If to is "all", then the
         regions are copied to all images.
 
-        If the regions argument is not specified, it defaults to "all". You
-        can specify a region selector using any of the following:
+        If the regions argument is not specified, it defaults to
+        "selected" if there are selected regions, otherwise "all".
+        You can specify a region selector using any of the following:
 
         -  all: all regions not including child text regions
         -  All: all regions including child text regions
         -  selected: the selected region (or regions in a selected group)
         -  [color]: regions of the specified color
         -  [shape]: regions of the specified shape
+        -  [wcs]:  regions whose initial wcs matches the specified wcs
         -  [tag]:  regions having the specified tag
         -  /[regexp]/: regions with a tag matching the specified regexp
         -  child: a child region (i.e. text child of another region)
@@ -3564,14 +3613,16 @@ class JS9:
 
         -  regions: which regions to remove
 
-        If the regions argument is not specified, it defaults to "all". You
-        can specify a region selector using any of the following:
+        If the regions argument is not specified, it defaults to
+        "selected" if there are selected regions, otherwise "all".
+        You can specify a region selector using any of the following:
 
         -  all: all regions not including child text regions
         -  All: all regions including child text regions
         -  selected: the selected region (or regions in a selected group)
         -  [color]: regions of the specified color
         -  [shape]: regions of the specified shape
+        -  [wcs]:  regions whose initial wcs matches the specified wcs
         -  [tag]:  regions having the specified tag
         -  /[regexp]/: regions with a tag matching the specified regexp
         -  child: a child region (i.e. text child of another region)
@@ -3627,6 +3678,48 @@ class JS9:
         of as regions).
         """
         return self.send({'cmd': 'SaveRegions', 'args': args})
+
+    def SelectRegions(self, *args):
+        """
+        Group Regions into a Selection
+
+        call:
+
+        JS9.SelectRegions(regions)
+
+        where:
+
+        -  regions: which regions to select
+
+        JS9 has a rich mouse-based interface for selecting regions: a single
+        region is selected by clicking on it. A number of regions can be
+        gathered into a group selection by pressing the left mouse button and
+        dragging the mouse over the desired regions. To add to an
+        already-existing selection, shift-click the mouse on a region.
+
+        This routine allows you to create a group selection programmatically by
+        specifying which regions make up the selection.
+
+        If the regions argument is not specified, it defaults to
+        "selected" if there are selected regions, otherwise "all".
+        You can specify a region selector using any of the following:
+
+        -  all: all regions not including child text regions
+        -  All: all regions including child text regions
+        -  selected: the selected region (or regions in a selected group)
+        -  [color]: regions of the specified color
+        -  [shape]: regions of the specified shape
+        -  [wcs]:  regions whose initial wcs matches the specified wcs
+        -  [wcs]:  regions whose initial wcs matches the specified wcs
+        -  [tag]:  regions having the specified tag
+        -  /[regexp]/: regions with a tag matching the specified regexp
+        -  child: a child region (i.e. text child of another region)
+        -  parent: a region that has a child (i.e. has a text child)
+
+        The result of the call will be a selected group which can be moved
+        as one unit.
+        """
+        return self.send({'cmd': 'SelectRegions', 'args': args})
 
     def ChangeRegionTags(self, *args):
         """

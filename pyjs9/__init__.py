@@ -229,8 +229,8 @@ class JS9:
 
     def __init__(self, host='http://localhost:2718', id='JS9'):  # pylint: disable=redefined-builtin
         """
-        :param host: host[:port] (default is 'http://localhost:2718')
-        :param id: the JS9 display id (default is 'JS9')
+        :param host: host[:port] (def: 'http://localhost:2718')
+        :param id: the JS9 display id (def: 'JS9')
 
         :rtype: JS9 object connected to a single instance of js9
 
@@ -588,7 +588,7 @@ class JS9:
         -  url: remote URL image to load
         -  opts: object containing image parameters
         -  type: "light" or "new"
-        -  html: html for the new page (default is menubar, image, colorbar)
+        -  html: html for the new page (def: menubar, image, colorbar)
         -  winopts: for "light", optional dhtml window options
 
         returns:
@@ -990,7 +990,7 @@ class JS9:
          - bin:  bin factor to apply after extracting the section
          - filter: for tables, row/event filter to apply when extracting a
             section
-         - separate: if true, display as a separate image (default is to update
+         - separate: if true, display as a separate image (def: to update
             the current image)
 
         All properties are optional: by default, the routine will extract a bin
@@ -3339,7 +3339,7 @@ class JS9:
 
     def SelectShapes(self, *args):
         """
-        Group Shapes into a Selection
+        Gather Shapes into a Selection
 
         call:
 
@@ -3356,27 +3356,156 @@ class JS9:
         dragging the mouse over the desired shapes. To add to an
         already-existing selection, shift-click the mouse on a shape.
 
-        This routine allows you to create a group selection programmatically by
-        specifying which shapes make up the selection.
+        This routine allows you to create a selection programmatically by
+        specifying which shapes make up the selection. The first argument
+        is the shape layer. The second argument is the regions selection.
+        If not specified, it defaults to "all". The call creates a selection
+        of shapes which can be moved as one unit.
 
-        If the shapes argument is not specified, it defaults to "all". You
-        can specify a selector using any of the following:
+        For example:
 
-        -  all: all shapes not including child text shapes
-        -  All: all shapes including child text shapes
-        -  selected: the selected shape (or shapes in a selected group)
-        -  [color]: shapes of the specified color
-        -  [shape]: shapes of the specified shape
-        -  [wcs]:  shapes whose initial wcs matches the specified wcs
-        -  [tag]:  shapes having the specified tag
-        -  /[regexp]/: shapes with a tag matching the specified regexp
-        -  child: a child shape (i.e. text child of another shape)
-        -  parent: a shape that has a child (i.e. has a text child)
+        >>> j.SelectShapes("myreg", "circle") # select all circles
+        >>> j.SelectShapes("myreg", "circle&&!foo2") # circles w/o 'foo2' tag
 
-        The result of the call will be a selected group which can be moved
-        as one unit.
+        Regions in a selection are processed individually, i.e. a regions
+        selection will match the regions inside a group. Thus for example,
+        if you create a selection containing circles, changing the color using
+        the "circle" specification will also affect the circles within the
+        selection. You can, of course, process only the regions inside a
+        selection using the selected specification.
         """
         return self.send({'cmd': 'SelectShapes', 'args': args})
+
+    def UnselectShapes(self, *args):
+        """Remove Shapes From a Selection
+
+        call:
+
+        JS9.UnselectShapes(layer, shapes)
+
+        where:
+
+        -  layer: shape layer
+        -  shapes: which shapes to select
+
+        JS9 has a rich mouse-based interface for selecting shapes: a single
+        shape is selected by clicking on it. A number of shapes can be
+        gathered into a group selection by pressing the left mouse button and
+        dragging the mouse over the desired shapes. To add to an
+        already-existing selection, shift-click the mouse on a shape.
+
+        This routine allows you to remove one or more shapes from a shape
+        selection programmatically by specifying which shapes to remove.
+        The first argument is the shape layer. The second argument is the
+        shape selection. In not specified, or specified as "all" or "selected",
+        the selection is undone.  Otherwise the call will make a new
+        selection, not containing the unselected shapes, which can be
+        moved as one unit.
+        """
+        return self.send({'cmd': 'UnselectShapes', 'args': args})
+
+    def GroupShapes(self, *args):
+        """
+        Gather Shapes into a Long-lived Group
+
+        call:
+
+        JS9.GroupShapes(layer, shapes, opts)
+
+        where:
+
+        -  layer: shape layer
+        -  shapes: which shapes to group
+        -  opts: optional object containing grouping options
+
+        returns:
+
+        -  groupid: the group id associated with the newly created group
+
+        A shape group can be moved and resized as a single unit. To
+        first order, it is a long-lived form of a region selection.
+        The latter gets dissolved when you click the mouse outside the
+        selection, but a shape group is dissolved only by
+        calling j.UngroupShapes().
+
+        This routine allows you to create a group by specifying the shapes
+        which will compose it.  The first argument is the regions selection.
+        If not specified, it defaults to either 'selected' or 'all', depending
+        on whether a shape selection currently exits.
+
+        The optional opts argument contains the following properties:
+
+        -  groupid: the group id to use, if possible (default: 'group_[n]')
+        -  select: if false, the group is not selected upon creation
+
+        By default, the groupid will be the string 'group_' followed by
+        an integer chosen so that the groupid is unique. You can supply your
+        own groupid, but if it already is associated with an existing group,
+        an integer value will be appended to make it unique. Also, by default
+        the newly created group will be 'selected'.  You can pass
+        the select property with a value of false in order to
+        avoid selecting the group (e.g., if you are creating a number of
+        groups and do not want to see each of them selected in turn.)
+
+        The returned groupid string can be used to select and process all the
+        shapes in that group. Thus, for example, you can use the groupid to
+        change the color of all grouped shapes:
+
+        >>> gid = j.GroupShapes('myreg', 'circle && foo1');
+        >>> j.ChangeShapes('myreg', gid, {'color':'red'});
+
+        Note however, that unlike the temporary shape selections, shapes
+        in a group are not available individually, i.e., a regions selection
+        using a non-groupid does not match shapes inside a group. Thus, for
+        example, if you have created a group of circles, changing the color
+        using a 'circle' specification does not affect circles within the group:
+
+        >>> gid = j.GroupShapes('myreg', 'circle && foo1');
+        >>> j.ChangeShapes('myreg', 'circle', {'color':'cyan'}) # no
+        >>> j.ChangeShapes('myreg', gid, {'color':'red'});      # yes
+
+        Furthermore, a given shape can only be part of one group at a
+        time. In the case where a shape already is part of an existing group,
+        the globalOpts.regGroupConflict property determines how that shape
+        is processed.  The default is skip, meaning that the shape is
+        silently skipped over when creating the new group. The alternative
+        is error, which will throw an error.
+        """
+        return self.send({'cmd': 'GroupShapes', 'args': args})
+
+    def UngroupShapes(self, *args):
+        """
+        Dissolve a Group of Shapes
+
+        call:
+
+        JS9.UngroupShapes(layer, groupid, opts)
+
+        where:
+
+        -  layer: shape layer
+        -  groupid: group id of the group to dissolve
+        -  opts: optional object containing ungrouping options
+
+        This routine allows you to dissolve an existing group, so that the
+        shapes contained therein once again become separate. The first
+        argument is the groupid, previously returned by the JS9.GroupShapes()
+        call.
+
+        The optional opts argument contains the following properties:
+
+        -  select: newly separate shapes in the group are 'selected'?
+
+        By default, the ungrouped shapes unobtrusively take their place among
+        other shapes on the display. You can make them be selected by
+        passing the select: true property in opts. Doing this, for
+        example, would allow you to remove them easily with the Delete key.
+
+        For example:
+        >>> gid = j.GroupShapes('myreg', 'circle || ellipse')
+        >>> j.UngroupShapes('myreg', gid)
+        """
+        return self.send({'cmd': 'UngroupShapes', 'args': args})
 
     def AddRegions(self, *args):
         """
@@ -3505,7 +3634,7 @@ class JS9:
         -  wcsunits: units for wcs output (sexagesimal, degrees, pixels)
         -  includejson: include JSON object
         -  includecomments: include comments
-        -  layer: which layer to display (default is regions layer)
+        -  layer: which layer to display (def: regions layer)
 
         The mode property accepts the following values:
         -  1: no display, return full region string including json, comments
@@ -3513,6 +3642,46 @@ class JS9:
         -  3: display and return full region string (including json, comments)
         """
         return self.send({'cmd': 'ListRegions', 'args': args})
+
+    def ListGroups(self, *args):
+        """
+        List one or more region/shape groups
+
+        call:
+
+        JS9.ListGroups(group, opts)
+
+        where:
+
+        -  group: which group(s) to list
+        -  opts: object containing options
+
+        List the specified region/shape group(s) in the specified layer
+        (default is "regions").  The first argument is the groupid of the
+        group to list, or "all" to list all groups.
+
+        The optional opts object can contain the following properties:
+
+        -  includeregions: display regions as well as the group name (def: true)
+        -  layer: layer to list (def: "regions")
+
+        By default, the display will includes the name of the group and the
+        regions in the group. To skip the display of regions, supply
+        an opts object with the includeregions property set to False.
+
+        For example:
+
+        >>> j.ListGroups("all", {"includeregions": false})
+        grp1
+        grp2
+        grp3
+
+        >>> j.ListGroups("grp1")
+        grp1:
+        circle(3980.00,4120.00,20.00) # source,include,foo1
+        ellipse(4090.00,4120.00,25.00,15.00,0.0000) # source,include,foo1
+        """
+        return self.send({'cmd': 'ListGroups', 'args': args})
 
     def EditRegions(self, *args):
         """
@@ -3658,8 +3827,8 @@ class JS9:
         where:
 
         - filename: output file name
-        - which: which regions to save (default is "all")
-        - layer: which layer save (default is "regions")
+        - which: which regions to save (def: "all")
+        - layer: which layer save (def: "regions")
 
         Save the current regions for the displayed image as JS9 regions file.
         If filename is not specified, the file will be saved as "js9.reg".
@@ -3697,29 +3866,161 @@ class JS9:
         dragging the mouse over the desired regions. To add to an
         already-existing selection, shift-click the mouse on a region.
 
-        This routine allows you to create a group selection programmatically by
-        specifying which regions make up the selection.
+        This routine allows you to create a selection programmatically by
+        specifying which regions make up the selection.  The first argument is
+        the regions selection.  If not specified, it defaults to "all".
+        The call makes a selection of regions which can be moved as one unit.
 
-        If the regions argument is not specified, it defaults to
-        "selected" if there are selected regions, otherwise "all".
-        You can specify a region selector using any of the following:
+        For example:
 
-        -  all: all regions not including child text regions
-        -  All: all regions including child text regions
-        -  selected: the selected region (or regions in a selected group)
-        -  [color]: regions of the specified color
-        -  [shape]: regions of the specified shape
-        -  [wcs]:  regions whose initial wcs matches the specified wcs
-        -  [wcs]:  regions whose initial wcs matches the specified wcs
-        -  [tag]:  regions having the specified tag
-        -  /[regexp]/: regions with a tag matching the specified regexp
-        -  child: a child region (i.e. text child of another region)
-        -  parent: a region that has a child (i.e. has a text child)
+        >>> j.SelectRegions("circle") # select all circles
+        >>> j.SelectRegions("circle && !foo2") # all circles without tag 'foo2'
 
-        The result of the call will be a selected group which can be moved
-        as one unit.
+        Regions in a selection are processed individually, i.e. a regions
+        selection will match the regions inside a group. Thus for example,
+        if you create a selection containing circles, changing the color using
+        the "circle" specification will also affect the circles within the
+        selection. You can, of course, process only the regions inside a
+        selection using the selected specification.
         """
         return self.send({'cmd': 'SelectRegions', 'args': args})
+
+    def UnselectRegions(self, *args):
+        """
+        Remove Regions From a Selection
+
+        call:
+
+        JS9.UnselectRegions(regions)
+
+        where:
+
+        -  regions: which regions to select
+
+        JS9 has a rich mouse-based interface for selecting regions: a single
+        region is selected by clicking on it. A number of regions can be
+        gathered into a group selection by pressing the left mouse button and
+        dragging the mouse over the desired regions. To add to an
+        already-existing selection, shift-click the mouse on a region.
+
+        This routine allows you to remove one or more regions from a region
+        selection programmatically by specifying which regions to remove.
+        The first argument is the regions selection. In not specified,
+        or specified as "all" or "selected", the selection is undone.
+        Otherwise the call will make a new selection, not containing
+        the unselected regions, which can be moved as one unit.
+
+        For example:
+
+        >>> j.UnselectRegions("circle&&!foo2") # unselect circles w/o tag 'foo2'
+        """
+        return self.send({'cmd': 'UnselectRegions', 'args': args})
+
+    def GroupRegions(self, *args):
+        """
+        Gather Regions into a Long-lived Group
+
+        call:
+
+        JS9.GroupRegions(shapes, opts)
+
+        where:
+
+        -  regions: which regions to group
+        -  opts: optional object containing grouping options
+
+        returns:
+
+        -  groupid: the group id associated with the newly created group
+
+        A region group can be moved and resized as a single unit. To
+        first order, it is a long-lived form of a region selection.
+        The latter gets dissolved when you click the mouse outside the
+        selection, but a region group is dissolved only by calling
+        JS9.UngroupRegions().
+
+        This routine allows you to create a group by specifying the regions
+        which will compose it.  The first argument is the regions selection.
+        If not specified, it defaults to either 'selected' or 'all', depending
+        on whether a region selection currently exits.
+
+        The optional opts argument contains the following properties:
+
+        -  groupid: the group id to use, if possible (default: 'group_[n]')
+        -  select: if false, the group is not selected upon creation
+
+        By default, the groupid will be the string 'group_' followed by
+        an integer chosen so that the groupid is unique. You can supply your
+        own groupid, but if it already is associated with an existing group,
+        an integer value will be appended to make it unique. Also, by default
+        the newly created group will be 'selected'.  You can pass
+        the select property with a value of false in order to
+        avoid selecting the group (e.g., if you are creating a number of
+        groups and do not want to see each of them selected in turn.)
+
+        The returned groupid string can be used to select and process all the
+        regions in that group. Thus, for example, you can use the groupid to
+        change the color of all grouped regions:
+
+        >>> gid = j.GroupRegions('circle && foo1');
+        >>> j.ChangeRegions(gid, {'color':'red'});
+
+        Furthermore, when creating a regions file via JS9.SaveRegions(),
+        the groupid will be stored in each grouped region's JSON object, and
+        will be used to reconstitute the group when the file is reloaded.
+
+        Note however, that unlike the temporary region selections, regions
+        in a group are not available individually, i.e., a regions selection
+        using a non-groupid does not match regions inside a group. Thus, for
+        example, if you have created a group of circles, changing the color
+        using a 'circle' specification does not affect circles within the group:
+
+        >>> gid = j.GroupRegions('circle && foo1');
+        >>> j.ChangeRegions('circle', {'color':'cyan'}) # won't change group
+        >>> j.ChangeRegions(gid, {'color':'red'}); # change regions in group
+
+        Furthermore, a given region can only be part of one group at a
+        time. In the case where a region already is part of an existing group,
+        the globalOpts.regGroupConflict property determines how that region
+        is processed.  The default is skip, meaning that the region is
+        silently skipped over when creating the new group. The alternative
+        is error, which will throw an error.
+        """
+        return self.send({'cmd': 'GroupRegions', 'args': args})
+
+    def UngroupRegions(self, *args):
+        """
+        Dissolve a Group of Regions
+
+        call:
+
+        JS9.UngroupRegions(groupid, opts)
+
+        where:
+
+        -  groupid: group id of the group to dissolve
+        -  opts: optional object containing ungrouping options
+
+        This routine allows you to dissolve an existing group, so that the
+        regions contained therein once again become separate. The first
+        argument is the groupid, previously returned by the JS9.GroupRegions()
+        call.
+
+        The optional opts argument contains the following properties:
+
+        -  select: newly separate regions in the group are 'selected'?
+
+        By default, the ungrouped regions unobtrusively take their place among
+        other regions on the display. You can make them be selected by
+        passing the select: true property in opts. Doing this, for
+        example, would allow you to remove them easily with the Delete key.
+
+        For example:
+
+        >>> gid = j.GroupRegions('circle || ellipse')
+        >>> j.UngroupRegions(gid)
+        """
+        return self.send({'cmd': 'UngroupRegions', 'args': args})
 
     def ChangeRegionTags(self, *args):
         """
@@ -3731,7 +4032,7 @@ class JS9:
 
         where:
 
-        - which: which regions to process (default is 'all')
+        - which: which regions to process (def: 'all')
 	- addreg: array or comma-delimited string of regions to add
 	- removereg: array or comma-delimited string of regions to remove
 
@@ -3758,7 +4059,7 @@ class JS9:
 
         where:
 
-        - which: which regions to process (default is 'all')
+        - which: which regions to process (def: 'all')
 	- tag1: tag #1 to toggle
 	- tag2: tag #2 to toggle
 
@@ -3954,8 +4255,8 @@ class JS9:
 
         The opts object can specify the following properties:
 
-        - layers: save graphical layers (e.g. regions) (default is true)
-        - source: "image" or "display" (default is "display")
+        - layers: save graphical layers (e.g. regions) (def: true)
+        - source: "image" or "display" (def: "display")
 
         By default, SavePNG() will save all of the 2D graphics in the
         shape layers (regions, catalogs, etc.) as well as the image. Set
@@ -3995,8 +4296,8 @@ class JS9:
         specified, the file will be saved as "js9.png".
 
         The opts object can specify the following properties:
-        - layers: save graphical layers (e.g. regions) (default is true)
-        - source: "image" or "display" (default is "display")
+        - layers: save graphical layers (e.g. regions) (def: true)
+        - source: "image" or "display" (def: "display")
         - quality: JPEG encoder quality
 
         By default, SaveJPEG() will save all of the 2D graphics in the

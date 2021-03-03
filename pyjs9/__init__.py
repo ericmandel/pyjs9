@@ -3,6 +3,7 @@ pyjs9.py: connects Python and JS9 via the JS9 (back-end) helper
 """
 from __future__ import print_function
 
+import time
 import json
 import base64
 import logging
@@ -227,7 +228,7 @@ class JS9:
 
     """
 
-    def __init__(self, host='http://localhost:2718', id='JS9'):  # pylint: disable=redefined-builtin
+    def __init__(self, host='http://localhost:2718', id='JS9', maxtries=5, delay=1, debug=False):  # pylint: disable=redefined-builtin, too-many-arguments
         """
         :param host: host[:port] (def: 'http://localhost:2718')
         :param id: the JS9 display id (def: 'JS9')
@@ -261,13 +262,33 @@ class JS9:
         # open socket.io connection, if necessary
         if js9Globals['transport'] == 'socketio':
             try:
-                self.sockio = socketio.Client()
-                self.sockio.connect(host)
+                if debug:
+                    self.sockio = socketio.Client(logger=True,
+                                                  engineio_logger=True)
+                else:
+                    self.sockio = socketio.Client()
+                # python-socketio v4 => socket.io v2 => /socket.io/
+                # python-socketio v5 => socket.io v3 => /socket.io-3/
+                myver = int(socketio.__version__.split(".")[0])
+                if myver == 4:
+                    self.sockio.connect(host)
+                else:
+                    sockpath = '/socket.io-%d/' % (myver - 2)
+                    self.sockio.connect(host, socketio_path=sockpath)
             except Exception as e:  # pylint: disable=broad-except
                 logging.warning('socketio connect failed: %s, using html', e)
                 js9Globals['transport'] = 'html'
         self._block_cb = None
-        self._alive()
+        # wait for connect be ready, but success doesn't really matter here
+        tries = 0
+        while tries < maxtries:
+            try:
+                self._alive()
+            except Exception:	# pylint: disable=broad-except
+                time.sleep(delay)
+                tries = tries - 1
+            else:
+                break
 
     def __setitem__(self, itemname, value):
         """

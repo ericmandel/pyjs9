@@ -51,6 +51,7 @@ Optional dependencies::
     numpy               # support for GetNumpy and SetNumpy methods
     astropy             # support for GetFITS and SetFITS methods
     python-socketio     # fast, persistent socket.io protocol, instead of html
+                        # (install version 5.x, version 4.x is deprecated)
 
 To run::
 

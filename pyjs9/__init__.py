@@ -267,14 +267,7 @@ class JS9:
                                                   engineio_logger=True)
                 else:
                     self.sockio = socketio.Client()
-                # python-socketio v4 => socket.io v2 => /socket.io/
-                # python-socketio v5 => socket.io v3 => /socket.io-3/
-                myver = int(socketio.__version__.split(".")[0])
-                if myver == 4:
-                    self.sockio.connect(host)
-                else:
-                    sockpath = '/socket.io-%d/' % (myver - 2)
-                    self.sockio.connect(host, socketio_path=sockpath)
+                self.sockio.connect(host)
             except Exception as e:  # pylint: disable=broad-except
                 logging.warning('socketio connect failed: %s, using html', e)
                 js9Globals['transport'] = 'html'

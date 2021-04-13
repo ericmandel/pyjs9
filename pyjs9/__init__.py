@@ -689,12 +689,12 @@ class JS9:
 
         call:
 
-        status  = JS9.GetStatus(id, type)
+        status  = JS9.GetStatus(type, id)
 
         where:
 
-        -  id: the id of the file that was loaded into JS9
         -  type: the type of status
+        -  id: the id of the file that was loaded into JS9
 
         returns:
 
@@ -734,7 +734,7 @@ class JS9:
 
         This routine returns the status of the load of this image.
         Provided for backward compatibility, it simply calls the more general
-        GetStatus() routine with "Load" as the second argument.
+        GetStatus() routine with "Load" as the first argument.
 
         A status of 'complete' means that the image is fully loaded. Other
         statuses include:

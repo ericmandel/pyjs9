@@ -340,6 +340,8 @@ class JS9:
                 res = json.loads(urtn, object_hook=_decode_dict)
             except ValueError:   # not json
                 res = urtn
+                if type(res) == str:
+                    res = res.strip()
             return res
         else:
             self.__dict__['sockioResult'] = ''

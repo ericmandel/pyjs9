@@ -34,13 +34,13 @@ with the JS9 back-end server. However, if you install
 will use the faster, persistent `socket.io http://socket.io/`
 protocol.
 
-Install from the repository using pip, as usual::
+Install from the repository using pip3, as usual::
 
-    > pip install git+https://github.com/ericmandel/pyjs9.git#egg=pyjs9
+    > pip3 install git+https://github.com/ericmandel/pyjs9.git#egg=pyjs9
 
 or from a local copy::
 
-    > pip install /path/to/local/copy
+    > pip3 install /path/to/local/copy
 
 Mandatory dependencies::
 

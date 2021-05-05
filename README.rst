@@ -1,5 +1,5 @@
-.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.3237725.svg
-   :target: https://doi.org/10.5281/zenodo.3237725
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.4739188.svg
+   :target: https://doi.org/10.5281/zenodo.4739188
 
 JS9 brings image display right into your browser::
 

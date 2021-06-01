@@ -5,7 +5,7 @@ def readme():
         return f.read()
 
 setup(name='pyjs9',
-      version='3.4',
+      version='3.5',
       description='Python/JS9 connection, with numpy and astropy/fits support',
       long_description=readme(),
       author='Eric Mandel',

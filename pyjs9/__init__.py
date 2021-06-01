@@ -26,7 +26,7 @@ pyjs9.py connects Python and JS9 via the JS9 (back-end) helper
 """
 
 # pyjs9 version
-__version__ = '3.4'
+__version__ = '3.5'
 
 # try to be a little bit neat with global parameters
 js9Globals = {}

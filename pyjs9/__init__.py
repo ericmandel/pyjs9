@@ -277,9 +277,13 @@ class JS9:
         while tries < maxtries:
             try:
                 self._alive()
-            except Exception:	# pylint: disable=broad-except
+            # check for instance error, else sleep and try again
+            except Exception as e:  # pylint: disable=broad-except
+                if 'JS9 instance(s) found with id' in str(e):
+                    print(e)
+                    break
                 time.sleep(delay)
-                tries = tries - 1
+                tries = tries + 1
             else:
                 break
 

@@ -228,7 +228,7 @@ class JS9:
 
     """
 
-    def __init__(self, host='http://localhost:2718', id='JS9', maxtries=5, delay=1, debug=False):  # pylint: disable=redefined-builtin, too-many-arguments
+    def __init__(self, host='http://localhost:2718', id='JS9', multi=False, pageid=None, maxtries=5, delay=1, debug=False):  # pylint: disable=redefined-builtin, too-many-arguments, line-too-long
         """
         :param host: host[:port] (def: 'http://localhost:2718')
         :param id: the JS9 display id (def: 'JS9')
@@ -259,6 +259,8 @@ class JS9:
         if s < 0:
             host = 'http://' + host
         self.__dict__['host'] = host
+        self.__dict__['multi'] = multi
+        self.__dict__['pageid'] = pageid
         # open socket.io connection, if necessary
         if js9Globals['transport'] == 'socketio':
             try:
@@ -327,6 +329,9 @@ class JS9:
         if obj is None:
             obj = {}
         obj['id'] = self.__dict__['id']
+        obj['multi'] = self.__dict__['multi']
+        if self.__dict__['pageid'] is not None:
+            obj['pageid'] = self.__dict__['pageid']
 
         if js9Globals['transport'] == 'html': # pylint: disable=no-else-return
             host = self.__dict__['host']
@@ -344,7 +349,7 @@ class JS9:
                 res = json.loads(urtn, object_hook=_decode_dict)
             except ValueError:   # not json
                 res = urtn
-                if type(res) == str:
+                if isinstance(res, str):
                     res = res.strip()
             return res
         else:

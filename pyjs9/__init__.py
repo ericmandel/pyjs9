@@ -43,6 +43,9 @@ js9Globals['output_verify'] = 'ignore'
 # array allows us to deal with larger images
 js9Globals['retrieveAs'] = 'array'
 
+# how to turn on logging at most verbose level:
+# logging.basicConfig(level=logging.DEBUG)
+
 # load fits, if available
 try:
     from astropy.io import fits

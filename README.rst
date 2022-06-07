@@ -1,3 +1,5 @@
+NB: My software career comes to an end on July 1, 2022 and with it will end active development of pyjs9. Please plan accordingly.
+
 .. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.6554944.svg
    :target: https://doi.org/10.5281/zenodo.6554944
 

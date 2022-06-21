@@ -1,8 +1,7 @@
 **My software career comes to an end on July 1, 2022 and with it will end active development of pyjs9. Please plan accordingly. Eric**
 
-
-.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.6554944.svg
-   :target: https://doi.org/10.5281/zenodo.6554944
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.6675877.svg
+   :target: https://doi.org/10.5281/zenodo.6675877
 
 JS9 brings image display right into your browser::
 
